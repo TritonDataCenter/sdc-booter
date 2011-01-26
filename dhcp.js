@@ -43,7 +43,7 @@
 
 var pack    = require('./pack'),
     slog    = require('sys').log,
-    sprintf = require('./sprintf');
+    sprintf = require('./sprintf').sprintf;
 
 // define array of DHCP options
 var DHCP_OPTION = [];
@@ -123,6 +123,7 @@ DHCP_OPTION[220]="Subnet Allocation";
 DHCP_OPTION[221]="Virtual Subnet Selection";
 DHCP_OPTION[254]="Private use";
 DHCP_OPTION[255]="End of Options";
+
 exports.DHCP_OPTION = DHCP_OPTION;
 
 var DHCP_MESSAGE_TYPE = [];
@@ -153,6 +154,7 @@ var DHCPPacket = function(op, htype, hlen, hops, xid, secs, flags, ciaddr, yiadd
     this.file    = file    || "";
     this.options = options || [];
 }
+
 exports.DHCPPacket = DHCPPacket;
 
 DHCPPacket.parse = function(data) {
@@ -173,7 +175,7 @@ DHCPPacket.parse = function(data) {
     pkt_yiaddr = res[8];     // N
     pkt_siaddr = res[9];     // N
     pkt_giaddr = res[10];    // N
-    pkt_chaddr = sprintf.sprintf("%02x:%02x:%02x:%02x:%02x:%02x"
+    pkt_chaddr = sprintf("%02x:%02x:%02x:%02x:%02x:%02x"
         , res[11], res[12], res[13], res[14], res[15], res[16]);
 
     // skip 17-26 as unused chaddr (since hlen == 6)
@@ -214,14 +216,14 @@ DHCPPacket.parse = function(data) {
           , pkt_sname, pkt_file, options));
 }
 
-DHCPPacket.raw = function(packet) {
+DHCPPacket.prototype.raw = function() {
     var opt_len = 0;
     var options = new Buffer(1200);
-    var mac_octets = packet.chaddr.split(':');
+    var mac_octets = this.chaddr.split(':');
 
-    for (var option in packet.options) {
+    for (var option in this.options) {
         if ((option > 0) && (option < 255)) {
-            var value = packet.options[parseInt(option)];
+            var value = this.options[parseInt(option)];
             opt_len += options.write(pack.pack("CC", parseInt(option), value.length), opt_len, 'binary');
             for (var i=0; i<value.length; i++) {
                 opt_len += options.write(pack.pack("C", value[i]), opt_len, 'binary');
@@ -235,17 +237,17 @@ DHCPPacket.raw = function(packet) {
     }
 
     res = pack.pack("CCCCNnnNNNNC16a64a128CCCC"
-        , packet.op
-        , packet.htype
-        , packet.hlen
-        , packet.hops
-        , packet.xid
-        , packet.secs
-        , packet.flags
-        , packet.ciaddr
-        , packet.yiaddr
-        , packet.siaddr
-        , packet.giaddr
+        , this.op
+        , this.htype
+        , this.hlen
+        , this.hops
+        , this.xid
+        , this.secs
+        , this.flags
+        , this.ciaddr
+        , this.yiaddr
+        , this.siaddr
+        , this.giaddr
         , parseInt(mac_octets[0], 16)
         , parseInt(mac_octets[1], 16)
         , parseInt(mac_octets[2], 16)
@@ -253,8 +255,8 @@ DHCPPacket.raw = function(packet) {
         , parseInt(mac_octets[4], 16)
         , parseInt(mac_octets[5], 16)
         , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        , packet.sname
-        , packet.file
+        , this.sname
+        , this.file
         , 99
         , 130
         , 83
@@ -339,7 +341,7 @@ DHCPPacket.build_reply = function ( packet, data ) {
                         fmt="%02x "+fmt;
                     }
                     arg_array.unshift(fmt);
-                    var d=sprintf.sprintf.apply(null, arg_array);
+                    var d=sprintf.apply(null, arg_array);
                 }
             }
         }
@@ -348,43 +350,43 @@ DHCPPacket.build_reply = function ( packet, data ) {
     return(pkt);
 }
 
-DHCPPacket.dump = function( packet, logger ) {
+DHCPPacket.prototype.dump = function( logger ) {
 
     if (typeof logger == 'undefined') {
-        logger = function (msg) {
-            slog(msg);
-        }
+      logger = function (msg) { 
+        slog(msg); 
+      }
     }
 
     logger("==== BEGIN PACKET ====");
-    logger(sprintf.sprintf("OP:     0x%02x", packet.op));
-    logger(sprintf.sprintf("HTYPE:  0x%02x", packet.htype));
-    logger(sprintf.sprintf("HLEN:   0x%02x", packet.hlen));
-    logger(sprintf.sprintf("HOPS:   0x%02x", packet.hops));
-    logger(sprintf.sprintf("XID:    0x%08x", packet.xid));
-    logger(sprintf.sprintf("SECS:   0x%04x (%d)", packet.secs, packet.secs));
-    logger(sprintf.sprintf("FLAGS:  0x%04x", packet.flags));
-    logger(sprintf.sprintf("CIADDR: 0x%08x", packet.ciaddr));
-    logger(sprintf.sprintf("YIADDR: 0x%08x", packet.yiaddr));
-    logger(sprintf.sprintf("SIADDR: 0x%08x", packet.siaddr));
-    logger(sprintf.sprintf("GIADDR: 0x%08x", packet.giaddr));
-    logger(sprintf.sprintf("CHADDR: %s",     packet.chaddr));
-    logger(sprintf.sprintf("SNAME:  %s",     packet.sname));
-    logger(sprintf.sprintf("FILE:   %s",     packet.file));
+    logger(sprintf("OP:     0x%02x", this.op));
+    logger(sprintf("HTYPE:  0x%02x", this.htype));
+    logger(sprintf("HLEN:   0x%02x", this.hlen));
+    logger(sprintf("HOPS:   0x%02x", this.hops));
+    logger(sprintf("XID:    0x%08x", this.xid));
+    logger(sprintf("SECS:   0x%04x (%d)", this.secs, this.secs));
+    logger(sprintf("FLAGS:  0x%04x", this.flags));
+    logger(sprintf("CIADDR: 0x%08x", this.ciaddr));
+    logger(sprintf("YIADDR: 0x%08x", this.yiaddr));
+    logger(sprintf("SIADDR: 0x%08x", this.siaddr));
+    logger(sprintf("GIADDR: 0x%08x", this.giaddr));
+    logger(sprintf("CHADDR: %s",     this.chaddr));
+    logger(sprintf("SNAME:  %s",     this.sname));
+    logger(sprintf("FILE:   %s",     this.file));
 
-    for (var key in packet.options) {
+    for (var key in this.options) {
         var arg_array = [];
         var fmt="";
-        for (var i=0; i<packet.options[key].length; i++) {
-            arg_array.push(packet.options[key][i]);
+        for (var i=0; i<this.options[key].length; i++) {
+            arg_array.push(this.options[key][i]);
             fmt="%02x "+fmt;
         }
         arg_array.unshift(fmt);
-        var data=sprintf.sprintf.apply(null, arg_array);
+        var data=sprintf.apply(null, arg_array);
         if (DHCP_OPTION[key] == "DHCP message type") {
-            logger(sprintf.sprintf("OPTION[DHCP message type] = %d = %s", packet.options[key], DHCP_MESSAGE_TYPE[packet.options[key]]))
+            logger(sprintf("OPTION[DHCP message type] = %d = %s", this.options[key], DHCP_MESSAGE_TYPE[this.options[key]]))
         } else {
-            logger(sprintf.sprintf("OPTION[%d][%s]: len: %d (%s)", key, DHCP_OPTION[key], packet.options[key].length, data));
+            logger(sprintf("OPTION[%d][%s]: len: %d (%s)", key, DHCP_OPTION[key], this.options[key].length, data));
         }
     }
     logger("===== END PACKET =====");

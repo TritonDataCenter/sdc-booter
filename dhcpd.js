@@ -28,41 +28,40 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
         }
     }
 
-    // TODO: make this method in_packet.dump() instead
-    dhcp.DHCPPacket.dump(in_packet, function (msg) {
-        slog("< [" + peer.address + ":" + peer.port + "] "+ msg);
+    in_packet.dump(function (msg) {
+      slog("< [" + peer.address + ":" + peer.port + "] "+ msg);
     });
 
     // decide what to do based on message type (option 53)
     switch (dhcp.DHCP_MESSAGE_TYPE[in_packet.options[53]]) {
         case 'DHCPDISCOVER':
             slog("< DHCPDISCOVER");
-            out_packet = dhcp.DHCPPacket.build_reply(in_packet, {
-                'yiaddr': '10.99.99.20'
+            out_packet = dhcp.DHCPPacket.build_reply(in_packet, 
+              { 'yiaddr': '10.99.99.20'
               , 'siaddr': '10.99.99.4'
               , 'file': 'pxegrub'
-              , 'options': {
-                  '1': '255.255.255.0'
+              , 'options': 
+                { '1': '255.255.255.0'
                 , '51': 6000
                 , '53': 'DHCPOFFER'
                 , '54': '10.99.99.4'
-                , '150': '/00-50-56-32-cd-2d/menu.lst'
+                //, '150': '/00-50-56-32-cd-2d/menu.lst'
               }
             });
             slog("> DHCPOFFER");
             break;
         case 'DHCPREQUEST':
             slog("< DHCPREQUEST");
-            out_packet = dhcp.DHCPPacket.build_reply(in_packet, {
-                'yiaddr': '10.99.99.20'
+            out_packet = dhcp.DHCPPacket.build_reply(in_packet, 
+              { 'yiaddr': '10.99.99.20'
               , 'siaddr': '10.99.99.4'
               , 'file': 'pxegrub'
-              , 'options': {
-                  '1': '255.255.255.0'
+              , 'options': 
+                { '1': '255.255.255.0'
                 , '51': 6000
                 , '53': 'DHCPACK'
                 , '54': '10.99.99.4'
-                , '150': '/00-50-56-32-cd-2d/menu.lst'
+                //, '150': '/00-50-56-32-cd-2d/menu.lst'
               }
             });
             slog("> DHCPACK");
@@ -71,15 +70,13 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
             break;
     }
 
-    out = dhcp.DHCPPacket.raw(out_packet);
+    var out = out_packet.raw();
     res = sock.send(out, 0, out.length, 68, '255.255.255.255', function (err, bytes) {
-        if (err) {
-            throw err;
-        }
+        if (err) throw err;
         console.log("Wrote " + bytes + " bytes to socket.");
     });
 
-    dhcp.DHCPPacket.dump(out_packet, function (msg) {
+    out_packet.dump(function (msg) {
         slog("> [" + peer.address + ":" + peer.port + "] "+ msg);
     });
 
