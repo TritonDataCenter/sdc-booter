@@ -36,11 +36,11 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
     switch (dhcp.DHCP_MESSAGE_TYPE[in_packet.options[53]]) {
         case 'DHCPDISCOVER':
             slog("< DHCPDISCOVER");
-            out_packet = dhcp.DHCPPacket.build_reply(in_packet, 
+            out_packet = dhcp.DHCPPacket.build_reply(in_packet,
               { 'yiaddr': '10.99.99.20'
               , 'siaddr': '10.99.99.4'
               , 'file': 'pxegrub'
-              , 'options': 
+              , 'options':
                 { '1': '255.255.255.0'
                 , '51': 6000
                 , '53': 'DHCPOFFER'
@@ -52,11 +52,11 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
             break;
         case 'DHCPREQUEST':
             slog("< DHCPREQUEST");
-            out_packet = dhcp.DHCPPacket.build_reply(in_packet, 
+            out_packet = dhcp.DHCPPacket.build_reply(in_packet,
               { 'yiaddr': '10.99.99.20'
               , 'siaddr': '10.99.99.4'
               , 'file': 'pxegrub'
-              , 'options': 
+              , 'options':
                 { '1': '255.255.255.0'
                 , '51': 6000
                 , '53': 'DHCPACK'

@@ -353,8 +353,8 @@ DHCPPacket.build_reply = function ( packet, data ) {
 DHCPPacket.prototype.dump = function( logger ) {
 
     if (typeof logger == 'undefined') {
-      logger = function (msg) { 
-        slog(msg); 
+      logger = function (msg) {
+        slog(msg);
       }
     }
 
