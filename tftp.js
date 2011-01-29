@@ -166,7 +166,7 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
 
 function requestHandler(peer, filename, mode) {
   var macReg = /menu.lst.01([0-9A-F]{12})/;
-	
+
 	log(peer, "requested file: "+ filename);
 	log(peer, "mode: "+ mode);
 
@@ -225,7 +225,7 @@ function rebootMenu(mac, timeout) {
 }
 
 function buildMenu(mac) {
-  var c = getConfig(mac); 
+  var c = getConfig(mac);
 
   var template = function() {
 		return (
