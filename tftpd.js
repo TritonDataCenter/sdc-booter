@@ -14,11 +14,13 @@ var pack = require('./pack'),
     slog = require('sys').log,
    dgram = require('dgram'),
       fs = require('fs'),
+		path = require('path'),
       EE = require('events').EventEmitter;
+     sys = require('sys');
 
-var SERVER_HOST = '127.0.0.1';
+var SERVER_HOST = '0.0.0.0';
 var SERVER_PORT = 69;
-var TFTP_BOOT = './';
+var TFTPROOT = '/tftpboot';
 
 var sessions = {};
 
@@ -41,127 +43,136 @@ var ERR_FILE_EXISTS = 6;       // File already exists
 var ERR_NO_SUCH_USER = 7;      // No such user
 var ERR_NO_OPTION = 8;         // Option does not exist
 
-
-var Session = function(client, filename, mode, options) {
+var Session = function(client) {
   this.client = client;
-  this.filename = filename;
-  this.mode = mode;
-  this.options = options || {};
+  this.filename = null;
+  this.mode = null;
+  this.options = {};
   this.block = 1; 
-
-  var self = this;
-
-  this.on('error', function() {
-    console.log('GOT AN ERROR');
-  });
-
-  this.on('data', function(data) {
+	var self = this;
+  
+  this.on('message', function(data) {
     var opcode = OPCODES[data[1]];
-    
     switch (opcode) {
       case 'RRQ':
-        console.log('< RRQ');
+        parseRRQ(data);
         break;
       case 'WRQ':
         break;
       case 'DATA':
         break;
       case 'ACK':
-        var ack = pack.unpack('CCn', data.toString('binary'));
-        this.emit('ack', ack[2]);
+        parseACK(data);
         break;
       case 'ERROR':
         var err = pack.unpack('nna*', data.toString('binary'));
-        this.emit('error');    
-        break;
-      case 'OPACK':
+        slog("< ERROR: " + err);
         break;
     }
-
   });
 
-  this.start();
+  var parseACK = function(data) {
+    var ack = pack.unpack('CCn', data.toString('binary'));
+    var ackblock = ack[2];
+    slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
+    if (ackblock == self.block) {
+      self.block +=1;
+      self.sendData();
+    }
+  }
+
+	var parseRRQ = function(data) {
+		var req = pack.unpack('CCa*a*a*a*a*a*a*', data.toString('binary'));
+		self.filename = TFTPROOT + '/' + req[2];
+		self.mode = req[3];
+		self.block = 1;
+			
+    // parse the rest of the option in requests
+		var pos = 4;
+		while (req[pos] != undefined && req[pos] != '') {
+			self.options[req[pos]] = req[pos+1];
+			pos += 2;
+		}
+	
+		// send an option acknowledgement
+		for (key in self.options) {
+			switch (key) {
+				case 'blksize':
+					console.log("Blocksize: " + self.options[key]);
+					self.sendOack(key, self.options[key]);
+					break;
+			}
+		}
+
+		console.log("< RRQ mode: " + self.mode);
+    self.sendData();
+
+	}
 
 }
 
 Session.prototype = new EE;
-
-Session.create = function(client, data) {
-  var req = pack.unpack('CCa*a*a*a*', data.toString('binary'));
-  var filename = req[2];
-  var mode = req[3];
-  var options = {};
-
-  console.log(req);
-  // XXX
-  var pos = 4;
-  while (req[pos] != undefined && req[pos] != '') {
-    options[req[pos]] = req[pos+1];
-    pos += 2;
-  }
-
-  console.log('Creating new session for ' + client.address);
-  return new Session(client, filename, mode, options);
-}
-
-
-Session.prototype.start = function() {
-  console.log("< RRQ filename: " + this.filename);
+  
+Session.prototype.sendData = function() {
   var bsize = this.options.blksize || 512;
-  var rs = fs.createReadStream(this.filename, {'bufferSize': bsize});
+  var buffer = new Buffer(4 + parseInt(bsize));
+  var pos = (this.block -1 ) * bsize;
   var self = this;
- 
-  rs.on('data', function(data) {
-    send(data);
-    rs.pause();
-  });
-
-  rs.on('end', function() {
-    send();
-  });
-
-  this.on('ack', function(ackblock) {
-    if (self.block == ackblock) {
-      self.block = ackblock + 1; //next block
-      rs.resume();
-    } 
-  });
-
-  var send = function(data) {
-    if (data == undefined) {
-      var buffer = new Buffer(4);
-    } 
-    else {
-      var buffer = new Buffer(4 + data.length);
-      data.copy(buffer, 4, 0);
+  
+  fs.open(self.filename, 'r', function(err, fp) {
+    if (err) {
+      self.sendError(ERR_FILE_NOT_FOUND, "File not found: "+ file);
+      return;
     }
-
-    buffer[0] = 0;
-    buffer[1] = 3; // DATA OPCODE
-    buffer[2] = (self.block >> 8) & 0xFF;
-    buffer[3] = self.block & 0xFF;
-    sock.send(buffer, 0, buffer.length, self.client.port, self.client.address);
-  }
+    
+    fs.read(fp, buffer, 4, bsize, pos, function(err, bytesRead) {
+      if (err) {
+        log(peer, "Error reading file: "+ err);
+        sendError(ERR_UNDEFINED, err);
+        return;
+      }
+      fs.close(fp);
+  
+      buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
+      sock.send(buffer, 0, 4 + bytesRead, self.client.port, self.client.address, function(err, bytes) {
+        if (err) throw err;
+        slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
+      });
+    });
+  });
 
 }
+
+
+Session.prototype.sendOack = function(option, value) {
+	var buffer = new Buffer(pack.pack("CCa*a*", 0, 6, option, value));
+	slog("> OACK len: " + buffer.length + " block: " + this.block);
+	sock.send(buffer, 0, buffer.length, this.client.port, this.client.address);
+}
+
+Session.prototype.sendError = function(code, msg) {
+	var buffer = new Buffer(4 + msg.length);
+	buffer.write(pack.pack("CCnA*", 0, 5, code, msg), 'binary');
+	slog("> ERROR len: " + buffer.length + " block: " + this.block);
+	sock.send(buffer, 0, buffer.length, this.client.port, this.client.address);
+}
+
 
 var sock = dgram.createSocket('udp4', function (data, client) {
   var key = client.address + ':' + client.port;
   var session = sessions[key];
  
   if (session == undefined) {
-    session = Session.create(client, data);
+    var session = new Session(client);
     sessions[key] = session;
-  }
-  else {
-    session.emit('data', data);
-  }
+  } 
+ 
+  session.emit('message', data);
 
 });
 
 sock.on('listening', function() {
-  console.log("TFTP Server listening on " + SERVER_HOST + ":" + SERVER_PORT);
-
+  slog("TFTP Server listening on " + SERVER_HOST + ":" + SERVER_PORT);
 });
 
 sock.bind(SERVER_PORT, SERVER_HOST);
