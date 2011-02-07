@@ -79,7 +79,7 @@ var Session = function(client) {
     var ack = pack.unpack('CCn', data.toString('binary'));
     var ackblock = ack[2];
     //slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
-    if (ackblock == self.block) {
+    if (ackblock == (self.block % 65536)) {
       self.block +=1;
       self.sendData();
     }
@@ -212,6 +212,7 @@ Session.prototype.sendFile = function() {
   var bsize = this.options.blksize || 512;
   var buffer = new Buffer(4 + parseInt(bsize));
   var pos = (this.block -1 ) * bsize;
+  var sendBlk = this.block % 65536;
   var self = this;
   
   if (this.block == 1) {
@@ -231,7 +232,7 @@ Session.prototype.sendFile = function() {
       }
       fs.close(fp);
   
-      buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
+      buffer.write(pack.pack("CCn", 0, 3, sendBlk), 0, 'binary');
       sock.send(buffer, 0, 4 + bytesRead, self.client.port, self.client.address, function(err, bytes) {
         if (err) throw err;
         //slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
