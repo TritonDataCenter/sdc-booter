@@ -50,6 +50,7 @@ var Session = function(client) {
   this.options = {};
   this.block = 1; 
 	var self = this;
+	this.rollover = 0;
   
   this.on('message', function(data) {
     var opcode = OPCODES[data[1]];
@@ -76,8 +77,15 @@ var Session = function(client) {
   var parseACK = function(data) {
     var ack = pack.unpack('CCn', data.toString('binary'));
     var ackblock = ack[2];
-    //slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
-    if (ackblock == self.block) {
+    slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
+    // unofficial tftp feature: to transfer files with a block count > 65535
+    // rollover if an ackblock with id 0 is recieved and continue transfering.
+	 	if (ackblock == 65535) {
+			self.block = 0;
+			self.rollover += 1 ;
+			self.sendData();
+		} 
+		else if (ackblock == self.block) {
       self.block +=1;
       self.sendData();
     }
@@ -95,6 +103,9 @@ var Session = function(client) {
 			self.options[req[pos]] = req[pos+1];
 			console.log(req[pos]);
 			switch (req[pos]) {
+				case 'timeout':
+					slog("Got a TIMEOUT packet");
+					break;
 				case 'tsize':
 				  try {
             stats = fs.statSync(self.filename)
@@ -121,8 +132,9 @@ Session.prototype = new EE;
 Session.prototype.sendData = function() {
   var bsize = this.options.blksize || 512;
   var buffer = new Buffer(4 + parseInt(bsize));
-  var pos = (this.block -1 ) * bsize;
-  var self = this;
+	var pos = ((this.block - 1) + (this.rollover * 65535)) * bsize;
+  
+	var self = this;
   
   fs.open(self.filename, 'r', function(err, fp) {
     if (err) {
@@ -141,7 +153,7 @@ Session.prototype.sendData = function() {
       buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
       sock.send(buffer, 0, 4 + bytesRead, self.client.port, self.client.address, function(err, bytes) {
         if (err) throw err;
-        //slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
+        slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
       });
     });
   });
@@ -160,7 +172,7 @@ Session.prototype.sendOack = function() {
 Session.prototype.sendError = function(code, msg) {
 	var buffer = new Buffer(4 + msg.length);
 	buffer.write(pack.pack("CCnA*", 0, 5, code, msg), 'binary');
-	//slog("> ERROR len: " + buffer.length + " block: " + this.block);
+	slog("> ERROR len: " + buffer.length + " block: " + this.block);
 	sock.send(buffer, 0, buffer.length, this.client.port, this.client.address);
 }
 
