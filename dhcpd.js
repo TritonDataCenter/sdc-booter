@@ -9,6 +9,7 @@
 var dgram = require('dgram'),
      slog = require('sys').log,
      dhcp = require('./dhcp'),
+     mapi = require('./mapi'),
   sprintf = require('./sprintf');
 
 var SERVER_HOST='0.0.0.0';
@@ -36,8 +37,8 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
     switch (dhcp.DHCP_MESSAGE_TYPE[in_packet.options[53]]) {
         case 'DHCPDISCOVER':
             slog("< DHCPDISCOVER");
-            out_packet = dhcp.DHCPPacket.build_reply(in_packet,
-              { 'yiaddr': '10.99.99.20'
+            packet_opts = {
+                'yiaddr': '10.99.99.20'
               , 'siaddr': '10.99.99.4'
               , 'file': 'pxegrub'
               , 'options':
@@ -46,14 +47,14 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
                 , '53': 'DHCPOFFER'
                 , '54': '10.99.99.4'
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
-              }
-            });
+                }
+            };
             slog("> DHCPOFFER");
             break;
         case 'DHCPREQUEST':
             slog("< DHCPREQUEST");
-            out_packet = dhcp.DHCPPacket.build_reply(in_packet,
-              { 'yiaddr': '10.99.99.20'
+            packet_opts = {
+                'yiaddr': '10.99.99.20'
               , 'siaddr': '10.99.99.4'
               , 'file': 'pxegrub'
               , 'options':
@@ -63,21 +64,29 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
                 , '54': '10.99.99.4'
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
               }
-            });
+            };
             slog("> DHCPACK");
             break;
         default:
             break;
     }
 
-    var out = out_packet.raw();
-    res = sock.send(out, 0, out.length, 68, '255.255.255.255', function (err, bytes) {
-        if (err) throw err;
-        console.log("Wrote " + bytes + " bytes to socket.");
-    });
+    mapi.getBootParams(in_packet.chaddr, function(config) {
+      packet_opts['yiaddr'] = config.ip;
+      // XXX: rename to netmask
+      packet_opts.options['1'] = config.subnet;
 
-    out_packet.dump(function (msg) {
-        slog("> [" + peer.address + ":" + peer.port + "] "+ msg);
+      out_packet = dhcp.DHCPPacket.build_reply(in_packet, packet_opts);
+      var out = out_packet.raw();
+      res = sock.send(out, 0, out.length, 68, '255.255.255.255', function (err, bytes) {
+          if (err) throw err;
+          console.log("Wrote " + bytes + " bytes to socket.");
+      });
+
+      out_packet.dump(function (msg) {
+          slog("> [" + peer.address + ":" + peer.port + "] "+ msg);
+      });
+
     });
 
 });

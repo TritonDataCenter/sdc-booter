@@ -1,6 +1,7 @@
-var dgram = require('dgram');
-var slog = require('sys').log;
-var fs = require('fs');
+var dgram = require('dgram'),
+     slog = require('sys').log,
+       fs = require('fs'),
+     mapi = require('./mapi');
 
 var SERVER_HOST='0.0.0.0';
 var SERVER_PORT=69;
@@ -145,6 +146,7 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
       var filename = tmp[1];
       tmp = getString(buf);
       var mode = tmp[1];
+      console.log(peer, "RRQ: filename=" + filename +", mode=" + mode);
 			requestHandler(peer, filename, mode);
       break;
     case "OPCODE_WRQ":
@@ -170,14 +172,15 @@ function requestHandler(peer, filename, mode) {
 	log(peer, "requested file: "+ filename);
 	log(peer, "mode: "+ mode);
 
-	// TODO check with MAPI to see what to boot.
 	if ( macReg.test(filename) ) {
     var mac = macReg.exec(filename)[1].match(/.{2}/g).join(':');
-		menu = buildMenu(mac);
-		fs.writeFile(TFTPBOOT + '/' + filename, menu, function(err) {
-			log(peer, "menu created. saving to " + filename);
-			startSession(peer, TFTPBOOT + '/' + filename);
-		});
+    log(peer, "mac=" + mac);
+		buildMenu(mac, function(menu) {
+      fs.writeFile(TFTPBOOT + '/' + filename, menu, function(err) {
+        log(peer, "menu created. saving to " + filename);
+        startSession(peer, TFTPBOOT + '/' + filename);
+      });
+    });
 	}
 	else {
 		fs.stat(TFTPBOOT + '/' + filename, function (err, stats) {
@@ -224,37 +227,41 @@ function rebootMenu(mac, timeout) {
 
 }
 
-function buildMenu(mac) {
-  var c = getConfig(mac);
+function buildMenu(mac, cb) {
+  mapi.getBootParams(mac, function(c) {
+    if (c == null) {
+      return null;
+    }
+		var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
+    var kernel_args = c.kernel_args;
+    for (var n in c.physical_networks) {
+      kernel_args += "," + n + "_nic=" + c.physical_networks[n];
+    }
 
-  var template = function() {
-		return (
+		cb(
 		[ "default=0"
 		, "timeout=5"
 		, "min_mem64 1024"
 		, "color cyan/blue white/blue"
 		, ""
 		, "title Live 64-bit"
-		, "kernel " + c.kernel + " -B " + c.kargs
-		, "module " + c.module
+		, "kernel " + c.kernel + " -B " + kernel_args
+		, "module " + c.boot_archive
 		, ""
 		, "title Live 64-bit KMDB"
-		, "  kernel " + c.kernel + " -k -B " + c.kargs + ',' + c.kargs_debug
-		, "  module " + c.module
+		, "  kernel " + c.kernel + " -k -B " + kernel_args + ',' + kargs_debug
+		, "  module " + c.boot_archive
 		, ""
 		, "title Live 64-bit Debug"
-		, "  kernel " + c.kernel + " -kdv -B " + c.kargs + ',' + c.kargs_debug
-		, "  module " + c.module
+		, "  kernel " + c.kernel + " -kdv -B " + kernel_args + ',' + kargs_debug
+		, "  module " + c.boot_archive
 		, ""
 		, "title Live 64-bit Rescue (no importing zpool)"
-		, "  kernel " + c.kernel + " -kdv -B " + c.kargs + ',noimport=true'
-		, "  module " + c.module
+		, "  kernel " + c.kernel + " -kdv -B " + kernel_args + ',noimport=true'
+		, "  module " + c.boot_archive
 		, ""
 		].join('\n'));
-	}
-
-	return template();
-
+  });
 }
 
 sock.on('listening', function() {

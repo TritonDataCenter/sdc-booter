@@ -15,10 +15,12 @@ var pack = require('./pack'),
    dgram = require('dgram'),
       fs = require('fs'),
 		path = require('path'),
+  config = require('./config').config,
       EE = require('events').EventEmitter;
+    mapi = require('./mapi'),
      sys = require('sys');
 
-var SERVER_HOST = '0.0.0.0';
+var SERVER_HOST = config.host;
 var SERVER_PORT = 69;
 var TFTPROOT = '/tftpboot';
 
@@ -118,12 +120,103 @@ var Session = function(client) {
 
 Session.prototype = new EE;
   
+Session.prototype.buildMenu = function(mac, cb) {
+  mapi.getBootParams(mac, function(c) {
+    if (c == null) {
+      return null;
+    }
+		var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
+    var kernel_args = c.kernel_args;
+    for (var n in c.physical_networks) {
+      kernel_args += "," + n + "_nic=" + c.physical_networks[n];
+    }
+
+		cb(
+		[ "default=0"
+		, "timeout=5"
+		, "min_mem64 1024"
+		, "color cyan/blue white/blue"
+		, ""
+		, "title Live 64-bit"
+		, "kernel " + c.kernel + " -B " + kernel_args
+		, "module " + c.boot_archive
+		, ""
+		, "title Live 64-bit KMDB"
+		, "  kernel " + c.kernel + " -k -B " + kernel_args + ',' + kargs_debug
+		, "  module " + c.boot_archive
+		, ""
+		, "title Live 64-bit Debug"
+		, "  kernel " + c.kernel + " -kdv -B " + kernel_args + ',' + kargs_debug
+		, "  module " + c.boot_archive
+		, ""
+		, "title Live 64-bit Rescue (no importing zpool)"
+		, "  kernel " + c.kernel + " -kdv -B " + kernel_args + ',noimport=true'
+		, "  module " + c.boot_archive
+		, ""
+		].join('\n'));
+  });
+}
+
+Session.prototype.sendMenuLst = function() {
+  var bsize = parseInt(this.options.blksize || 512);
+  var buffer = new Buffer(4 + bsize);
+  var start = (this.block -1 ) * bsize;
+  var self = this;
+
+  console.log("start=" + start);
+  console.log("bsize=" + bsize);
+  var end = start + bsize;
+  console.log("end=" + end);
+  console.log("menuLst.length=" + self.menuLst.length);
+  if (end > self.menuLst.length) {
+    end = self.menuLst.length;
+  }
+  console.log("end (after)=" + end);
+  var sendLength = 4 + end - start;
+  var toSend = '';
+  if (sendLength > 0) {
+    toSend = self.menuLst.substring(start, end)
+  } else {
+    sendLength = 4;
+  }
+  console.log("start=" + start + ", end=" + end + ", length=" + self.menuLst.length + ", send length=" + sendLength);
+  buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
+  buffer.write(self.menuLst.substring(start, end), 4);
+  console.log("==\n" + toSend  + "\n==");
+  sock.send(buffer, 0, sendLength, self.client.port, self.client.address, function(err, bytes) {
+    if (err) throw err;
+  });
+}
+
 Session.prototype.sendData = function() {
+  var self = this;
+  var macReg = /menu.lst.01([0-9A-F]{12})/;
+	if ( macReg.test(self.filename) ) {
+    var mac = macReg.exec(self.filename)[1].match(/.{2}/g).join(':');
+    console.log("mac=" + mac);
+    if ( !self.menuLst ) {
+      console.log("menu.lst requested, building...");
+      self.buildMenu(mac, function(menu) {
+          self.menuLst = menu;
+          self.sendMenuLst();
+      });
+    } else {
+      self.sendMenuLst();
+    }
+  } else {
+    this.sendFile();
+  }
+}
+
+Session.prototype.sendFile = function() {
   var bsize = this.options.blksize || 512;
   var buffer = new Buffer(4 + parseInt(bsize));
   var pos = (this.block -1 ) * bsize;
   var self = this;
   
+  if (this.block == 1) {
+    console.log("Sending data, filename="+ self.filename);
+  }
   fs.open(self.filename, 'r', function(err, fp) {
     if (err) {
       self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
