@@ -58,8 +58,10 @@ var Session = function(client) {
         parseRRQ(data);
         break;
       case 'WRQ':
+        self.sendError(ERR_ACCESS_VIOLATION, "Read only TFTP");
         break;
       case 'DATA':
+        self.sendError(ERR_ACCESS_VIOLATION, "Read only TFTP");
         break;
       case 'ACK':
         parseACK(data);
@@ -74,7 +76,7 @@ var Session = function(client) {
   var parseACK = function(data) {
     var ack = pack.unpack('CCn', data.toString('binary'));
     var ackblock = ack[2];
-    slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
+    //slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
     if (ackblock == self.block) {
       self.block +=1;
       self.sendData();
@@ -86,25 +88,28 @@ var Session = function(client) {
 		self.filename = TFTPROOT + '/' + req[2];
 		self.mode = req[3];
 		self.block = 1;
-			
-    // parse the rest of the option in requests
 		var pos = 4;
+    
+    // parse the rest of the option in requests
 		while (req[pos] != undefined && req[pos] != '') {
 			self.options[req[pos]] = req[pos+1];
+			console.log(req[pos]);
+			switch (req[pos]) {
+				case 'tsize':
+				  try {
+            stats = fs.statSync(self.filename)
+            self.options['tsize'] = stats.size;
+          } 
+          catch(err) {
+            self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
+            return;
+          }
+				  break;
+			}
 			pos += 2;
 		}
 	
-		// send an option acknowledgement
-		for (key in self.options) {
-			switch (key) {
-				case 'blksize':
-					console.log("Blocksize: " + self.options[key]);
-					self.sendOack(key, self.options[key]);
-					break;
-			}
-		}
-
-		console.log("< RRQ mode: " + self.mode);
+    self.sendOack();
     self.sendData();
 
 	}
@@ -121,13 +126,13 @@ Session.prototype.sendData = function() {
   
   fs.open(self.filename, 'r', function(err, fp) {
     if (err) {
-      self.sendError(ERR_FILE_NOT_FOUND, "File not found: "+ file);
+      self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
       return;
     }
     
     fs.read(fp, buffer, 4, bsize, pos, function(err, bytesRead) {
       if (err) {
-        log(peer, "Error reading file: "+ err);
+        slog("Error reading file: "+ err);
         sendError(ERR_UNDEFINED, err);
         return;
       }
@@ -136,24 +141,26 @@ Session.prototype.sendData = function() {
       buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
       sock.send(buffer, 0, 4 + bytesRead, self.client.port, self.client.address, function(err, bytes) {
         if (err) throw err;
-        slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
+        //slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
       });
     });
   });
 
 }
 
-
-Session.prototype.sendOack = function(option, value) {
-	var buffer = new Buffer(pack.pack("CCa*a*", 0, 6, option, value));
-	slog("> OACK len: " + buffer.length + " block: " + this.block);
+Session.prototype.sendOack = function() {
+  var msg = pack.pack("CC", 0, 6);
+  for (var key in this.options) {
+    msg += pack.pack("a*a*", key, this.options[key]);
+  }
+  var buffer = new Buffer(msg);
 	sock.send(buffer, 0, buffer.length, this.client.port, this.client.address);
 }
 
 Session.prototype.sendError = function(code, msg) {
 	var buffer = new Buffer(4 + msg.length);
 	buffer.write(pack.pack("CCnA*", 0, 5, code, msg), 'binary');
-	slog("> ERROR len: " + buffer.length + " block: " + this.block);
+	//slog("> ERROR len: " + buffer.length + " block: " + this.block);
 	sock.send(buffer, 0, buffer.length, this.client.port, this.client.address);
 }
 
