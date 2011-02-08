@@ -97,6 +97,9 @@ var Session = function(client) {
 			self.options[req[pos]] = req[pos+1];
 			console.log(req[pos]);
 			switch (req[pos]) {
+				case 'timeout':
+					slog("Got a TIMEOUT packet");
+					break;
 				case 'tsize':
 				  try {
             stats = fs.statSync(self.filename)
