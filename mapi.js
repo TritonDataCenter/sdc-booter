@@ -45,7 +45,8 @@ exports.buildMenuLst = function(mac, cb) {
     [ "default=0"
     , "timeout=5"
     , "min_mem64 1024"
-    , "color cyan/blue white/blue"
+    , "color grey/blue black/blue"
+    , "splashimage=/joybadger.xpm.gz"
     , ""
     , "title Live 64-bit"
     , "kernel " + kernel + " -B " + kargs + extra
