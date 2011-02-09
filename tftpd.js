@@ -122,43 +122,6 @@ var Session = function(client) {
 }
 
 Session.prototype = new EE;
-  
-Session.prototype.buildMenu = function(mac, cb) {
-  mapi.getBootParams(mac, function(c) {
-    if (c == null) {
-      return null;
-    }
-		var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
-    var kernel_args = c.kernel_args;
-    for (var n in c.physical_networks) {
-      kernel_args += "," + n + "_nic=" + c.physical_networks[n];
-    }
-
-		cb(
-		[ "default=0"
-		, "timeout=5"
-		, "min_mem64 1024"
-		, "color cyan/blue white/blue"
-		, ""
-		, "title Live 64-bit"
-		, "kernel " + c.kernel + " -B " + kernel_args
-		, "module " + c.boot_archive
-		, ""
-		, "title Live 64-bit KMDB"
-		, "  kernel " + c.kernel + " -k -B " + kernel_args + ',' + kargs_debug
-		, "  module " + c.boot_archive
-		, ""
-		, "title Live 64-bit Debug"
-		, "  kernel " + c.kernel + " -kdv -B " + kernel_args + ',' + kargs_debug
-		, "  module " + c.boot_archive
-		, ""
-		, "title Live 64-bit Rescue (no importing zpool)"
-		, "  kernel " + c.kernel + " -kdv -B " + kernel_args + ',noimport=true'
-		, "  module " + c.boot_archive
-		, ""
-		].join('\n'));
-  });
-}
 
 Session.prototype.sendMenuLst = function() {
   var bsize = parseInt(this.options.blksize || 512);
@@ -199,7 +162,7 @@ Session.prototype.sendData = function() {
     console.log("mac=" + mac);
     if ( !self.menuLst ) {
       console.log("menu.lst requested, building...");
-      self.buildMenu(mac, function(menu) {
+      mapi.buildMenuLst(mac, function(menu) {
           self.menuLst = menu;
           self.sendMenuLst();
       });
