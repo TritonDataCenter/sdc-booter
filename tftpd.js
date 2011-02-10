@@ -50,10 +50,9 @@ var Session = function(client) {
   this.filename = null;
   this.mode = null;
   this.options = {};
-  this.block = 1; 
+  this.block = 1;
 	var self = this;
-	this.rollover = 0;
-  
+
   this.on('message', function(data) {
     var opcode = OPCODES[data[1]];
     switch (opcode) {
@@ -94,7 +93,7 @@ var Session = function(client) {
 		self.mode = req[3];
 		self.block = 1;
 		var pos = 4;
-    
+
     // parse the rest of the option in requests
 		while (req[pos] != undefined && req[pos] != '') {
 			self.options[req[pos]] = req[pos+1];
@@ -107,7 +106,7 @@ var Session = function(client) {
 				  try {
             stats = fs.statSync(self.filename)
             self.options['tsize'] = stats.size;
-          } 
+          }
           catch(err) {
             self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
             return;
@@ -116,7 +115,7 @@ var Session = function(client) {
 			}
 			pos += 2;
 		}
-	
+
     self.sendOack();
     self.sendData();
 
@@ -193,7 +192,7 @@ Session.prototype.sendFile = function() {
       self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
       return;
     }
-    
+
     fs.read(fp, buffer, 4, bsize, pos, function(err, bytesRead) {
       if (err) {
         slog("Error reading file: "+ err);
@@ -201,7 +200,7 @@ Session.prototype.sendFile = function() {
         return;
       }
       fs.close(fp);
-  
+
       buffer.write(pack.pack("CCn", 0, 3, sendBlk), 0, 'binary');
       sock.send(buffer, 0, 4 + bytesRead, self.client.port, self.client.address, function(err, bytes) {
         if (err) throw err;
@@ -232,12 +231,12 @@ Session.prototype.sendError = function(code, msg) {
 var sock = dgram.createSocket('udp4', function (data, client) {
   var key = client.address + ':' + client.port;
   var session = sessions[key];
- 
+
   if (session == undefined) {
     var session = new Session(client);
     sessions[key] = session;
-  } 
- 
+  }
+
   session.emit('message', data);
 
 });
