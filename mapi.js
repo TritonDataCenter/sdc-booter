@@ -5,13 +5,17 @@ var resttp = require('./deps/resttp'),
 getBootParams = function(mac, cb) {
   var mapi = resttp.using(config.mapiUrl).as(config.user, config.password);
   mapi.GET({ pathname: "boot/" + mac }, function(code, body) {
+    console.log("mapi: GET /boot/" + mac + ": returned " + code);
     if ( code == 200 ) {
       cb(JSON.parse(body));
     }
     else {
-      mapi.POST({ pathname : "macs", params: { address: mac, physical_network_name: "admin" } }, function(code, body) {
+      var params = { address: mac, physical_network_name: "admin" };
+      mapi.POST({ pathname : "macs", params: params }, function(code, body) {
+        console.log("mapi: POST /boot/macs (params: " + params + "): returned " + code);
         if ( code == 201 ) {
           mapi.GET({ pathname: "boot/" + mac }, function(code, body) {
+            console.log("mapi: GET (2) /boot/" + mac + ": returned " + code);
             if ( code == 200 ) {
               cb(JSON.parse(body));
             } else {

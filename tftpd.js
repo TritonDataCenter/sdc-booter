@@ -164,6 +164,7 @@ Session.prototype.sendData = function() {
       console.log("menu.lst requested, building...");
       mapi.buildMenuLst(mac, function(menu) {
           self.menuLst = menu;
+          console.log("MENU LST\n==" + menu + "\n==");
           self.sendMenuLst();
       });
     } else {
