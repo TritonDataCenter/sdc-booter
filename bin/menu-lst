@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+var mapi = require('../mapi');
+
+var mac = '60:33:4b:29:bb:ff';
+mapi.buildMenuLst(mac, function(list) {
+  console.log(list);
+});

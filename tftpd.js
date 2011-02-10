@@ -15,10 +15,12 @@ var pack = require('./pack'),
    dgram = require('dgram'),
       fs = require('fs'),
 		path = require('path'),
+  config = require('./config').config,
       EE = require('events').EventEmitter;
+    mapi = require('./mapi'),
      sys = require('sys');
 
-var SERVER_HOST = '0.0.0.0';
+var SERVER_HOST = config.host;
 var SERVER_PORT = 69;
 var TFTPROOT = '/tftpboot';
 
@@ -77,15 +79,10 @@ var Session = function(client) {
   var parseACK = function(data) {
     var ack = pack.unpack('CCn', data.toString('binary'));
     var ackblock = ack[2];
-    slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
+    //slog("[" + self.client.address + ':' + self.client.port + "] < ACK: " + ackblock);
     // unofficial tftp feature: to transfer files with a block count > 65535
     // rollover if an ackblock with id 0 is recieved and continue transfering.
-	 	if (ackblock == 65535) {
-			self.block = 0;
-			self.rollover += 1 ;
-			self.sendData();
-		} 
-		else if (ackblock == self.block) {
+    if (ackblock == (self.block % 65536)) {
       self.block +=1;
       self.sendData();
     }
@@ -128,14 +125,69 @@ var Session = function(client) {
 }
 
 Session.prototype = new EE;
-  
+
+Session.prototype.sendMenuLst = function() {
+  var bsize = parseInt(this.options.blksize || 512);
+  var buffer = new Buffer(4 + bsize);
+  var start = (this.block -1 ) * bsize;
+  var self = this;
+
+  console.log("start=" + start);
+  console.log("bsize=" + bsize);
+  var end = start + bsize;
+  console.log("end=" + end);
+  console.log("menuLst.length=" + self.menuLst.length);
+  if (end > self.menuLst.length) {
+    end = self.menuLst.length;
+  }
+  console.log("end (after)=" + end);
+  var sendLength = 4 + end - start;
+  var toSend = '';
+  if (sendLength > 0) {
+    toSend = self.menuLst.substring(start, end)
+  } else {
+    sendLength = 4;
+  }
+  console.log("start=" + start + ", end=" + end + ", length=" + self.menuLst.length + ", send length=" + sendLength);
+  buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
+  buffer.write(self.menuLst.substring(start, end), 4);
+  console.log("==\n" + toSend  + "\n==");
+  sock.send(buffer, 0, sendLength, self.client.port, self.client.address, function(err, bytes) {
+    if (err) throw err;
+  });
+}
+
 Session.prototype.sendData = function() {
+  var self = this;
+  var macReg = /menu.lst.01([0-9A-F]{12})/;
+	if ( macReg.test(self.filename) ) {
+    var mac = macReg.exec(self.filename)[1].match(/.{2}/g).join(':');
+    console.log("mac=" + mac);
+    if ( !self.menuLst ) {
+      console.log("menu.lst requested, building...");
+      mapi.buildMenuLst(mac, function(menu) {
+          self.menuLst = menu;
+          console.log("MENU LST\n==" + menu + "\n==");
+          self.sendMenuLst();
+      });
+    } else {
+      self.sendMenuLst();
+    }
+  } else {
+    this.sendFile();
+  }
+}
+
+Session.prototype.sendFile = function() {
   var bsize = this.options.blksize || 512;
   var buffer = new Buffer(4 + parseInt(bsize));
-	var pos = ((this.block - 1) + (this.rollover * 65535)) * bsize;
+  var pos = (this.block -1 ) * bsize;
+  var sendBlk = this.block % 65536;
+  var self = this;
   
-	var self = this;
-  
+  if (this.block == 1) {
+    console.log("Sending data, filename="+ self.filename);
+  }
   fs.open(self.filename, 'r', function(err, fp) {
     if (err) {
       self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
@@ -150,7 +202,7 @@ Session.prototype.sendData = function() {
       }
       fs.close(fp);
   
-      buffer.write(pack.pack("CCn", 0, 3, self.block), 0, 'binary');
+      buffer.write(pack.pack("CCn", 0, 3, sendBlk), 0, 'binary');
       sock.send(buffer, 0, 4 + bytesRead, self.client.port, self.client.address, function(err, bytes) {
         if (err) throw err;
         slog("[" + self.client.address + ':' + self.client.port + "] > DATA Wrote " + bytes + " bytes to socket for block " + self.block);
