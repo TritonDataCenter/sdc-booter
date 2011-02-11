@@ -2,10 +2,16 @@
 
 var mapi = require('../mapi');
 
-var mac = '60:33:4b:29:bb:ff';
+var mac = process.argv[2];
+if (!mac) {
+  console.log("Usage: " + process.argv[1] + " mac_addr");
+  process.exit(1);
+}
+
 mapi.getBootParams(mac, function(params, err) {
   if (err) {
     console.log(err);
+  } else {
+    console.log(params);
   }
-  console.log(params);
 });

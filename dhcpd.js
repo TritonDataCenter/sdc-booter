@@ -8,12 +8,15 @@
 
 var dgram = require('dgram'),
      slog = require('sys').log,
+       fs = require('fs'),
      dhcp = require('./dhcp'),
      mapi = require('./mapi'),
   sprintf = require('./sprintf');
 
 var SERVER_HOST='0.0.0.0';
 var SERVER_PORT=67;
+// XXX: move this to a common config
+var TFTPROOT = '/tftpboot';
 
 var sessions = {};
 var sock = null;
@@ -71,7 +74,7 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
             break;
     }
 
-    mapi.getBootParams(in_packet.chaddr, function(config) {
+    mapi.writeMenuLst(in_packet.chaddr, TFTPROOT, function(config) {
       packet_opts['yiaddr'] = config.ip;
       // XXX: rename to netmask
       packet_opts.options['1'] = config.subnet;
