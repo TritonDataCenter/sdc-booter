@@ -1,5 +1,7 @@
 var resttp = require('./deps/resttp'),
     config = require('./config').config,
+      path = require('path'),
+        fs = require('fs'),
        sys = require('sys');
 
 getBootParams = function(mac, cb) {
@@ -31,11 +33,7 @@ getBootParams = function(mac, cb) {
 }
 exports.getBootParams = getBootParams;
 
-exports.buildMenuLst = function(mac, cb) {
-  getBootParams(mac, function(c) {
-    if (c == null) {
-      return null;
-    }
+buildMenuLst = function(mac, c) {
 		var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
     var kargs = c.kernel_args;
     var module = c.boot_archive;
@@ -45,7 +43,7 @@ exports.buildMenuLst = function(mac, cb) {
       extra += "," + n + "_nic=" + c.physical_networks[n];
     }
 
-    cb(
+    return (
     [ "default=0"
     , "timeout=5"
     , "min_mem64 1024"
@@ -81,66 +79,28 @@ exports.buildMenuLst = function(mac, cb) {
     , "  module " + module
     , ""
     ].join('\n'));
-  });
 }
+exports.buildMenuLst = buildMenuLst
 
-/*
-writeGrubConfigs = function(config) {
-  var kernel = '/platform/i86pc/kernel/amd64/unix'
-  var module = '/platform/i86pc/amd64/boot_archive'
-     
-  config.nodes.forEach(function(h, idx, arr) {
-    var menupath = '/zones/dhcpd/root/tftpboot/' + h.hostname;
-    var kargs = "console=text,rabbitmq=" + config.rabbitmq + ",admin_nic=" + h.mac
-    var extra = "";
-    if (h.external) extra += ",external_nic=" + h.external;
-    if (h.internal) extra += ",internal_nic=" + h.internal;
-    
-    var template = function() {
-      return (
-      [ "default=0"
-      , "timeout=5"
-      , "min_mem64 1024"
-      , "color cyan/blue white/blue"
-      , ""
-      , "title Live 64-bit"
-      , "kernel " + kernel + " -B " + kargs + extra
-      , "module " + module
-      , ""
-      , "title Live 64-bit +kmdb"
-      , "  kernel " + kernel + " -kd -B " + kargs + extra
-      , "  module " + module
-      , ""
-      , "title Live 64-bit Serial (ttyb)"
-      , "  kernel " + kernel + " -B " + kargs + ',console=ttyb,ttyb-mode="115200,8,n,1,-"' + extra
-      , "  module " + module
-      , ""
-      , "title Live 64-bit Serial (ttyb) +kmdb"
-      , "  kernel " + kernel + " -kd -B " + kargs + ',console=ttyb,ttyb-mode="115200,8,n,1,-"' + extra
-      , "  module " + module
-      , ""
-      , "title Live 64-bit Serial (ttya)"
-      , "  kernel " + kernel + " -B " + kargs + ',console=ttya,ttya-mode="115200,8,n,1,-"' + extra
-      , "  module " + module
-      , ""
-      , "title Live 64-bit Serial (ttya) +kmdb"
-      , "  kernel " + kernel + " -kd -B " + kargs + ',console=ttya,ttya-mode="115200,8,n,1,-"' + extra
-      , "  module " + module
-      , ""
-      , "title Live 64-bit Rescue (no importing zpool)"
-      , "  kernel " + kernel + " -kdv -B " + kargs + extra + ',noimport=true'
-      , "  module " + module
-      , ""
-      ].join('\n'));
-    } 
-    path.exists(menupath, function(exists) {
-    	if (!exists) {
-    		fs.mkdirSync(menupath, 0775)
-      } 
-      fs.writeFile(menupath + '/menu.lst', template(), function(err) {
-      	if (err) throw err;
+
+exports.writeMenuLst = function (mac, dir, cb) {
+  var filename = dir + '/menu.lst.01' + mac.replace(/:/g, '').toUpperCase();
+  console.log("Writing " + filename);
+  getBootParams(mac, function(c) {
+    if (c == null) {
+      return null;
+    }
+    var menu = buildMenuLst(mac, c);
+    console.log("MENU LST\n==" + menu + "\n==");
+    path.exists(dir, function(exists) {
+      if (!exists) {
+        fs.mkdirSync(dir, 0775)
+      }
+      console.log("about to write to " + filename);
+      fs.writeFile(filename, menu, function(err) {
+        if (err) throw err;
+        cb(c);
       });
     });
   });
 }
-*/
