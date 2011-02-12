@@ -19,9 +19,9 @@ var pack = require('./pack'),
       EE = require('events').EventEmitter;
      sys = require('sys');
 
-var SERVER_HOST = config.host;
+var SERVER_HOST = config.listenIp;
 var SERVER_PORT = 69;
-var TFTPROOT = '/tftpboot';
+var TFTPROOT = config.tftpRoot;
 
 var sessions = {};
 

@@ -11,12 +11,13 @@ var dgram = require('dgram'),
        fs = require('fs'),
      dhcp = require('./dhcp'),
      mapi = require('./mapi'),
-  sprintf = require('./sprintf');
+  sprintf = require('./sprintf'),
+   config = require('./config').config;
 
-var SERVER_HOST='0.0.0.0';
-var SERVER_PORT=67;
-// XXX: move this to a common config
-var TFTPROOT = '/tftpboot';
+var SERVER_HOST = config.listenIp;
+var DHCP_HOST   = config.dhcpIp;
+var SERVER_PORT = 67;
+var TFTPROOT    = config.tftpRoot;
 
 var sessions = {};
 var sock = null;
@@ -41,14 +42,13 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
         case 'DHCPDISCOVER':
             slog("< DHCPDISCOVER");
             packet_opts = {
-                'yiaddr': '10.99.99.20'
-              , 'siaddr': '10.99.99.4'
+                'siaddr': DHCP_HOST
               , 'file': 'pxegrub'
               , 'options':
                 { '1': '255.255.255.0'
                 , '51': 6000
                 , '53': 'DHCPOFFER'
-                , '54': '10.99.99.4'
+                , '54': DHCP_HOST
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
                 }
             };
@@ -57,14 +57,13 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
         case 'DHCPREQUEST':
             slog("< DHCPREQUEST");
             packet_opts = {
-                'yiaddr': '10.99.99.20'
-              , 'siaddr': '10.99.99.4'
+                'siaddr': DHCP_HOST
               , 'file': 'pxegrub'
               , 'options':
                 { '1': '255.255.255.0'
                 , '51': 6000
                 , '53': 'DHCPACK'
-                , '54': '10.99.99.4'
+                , '54': DHCP_HOST
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
               }
             };
