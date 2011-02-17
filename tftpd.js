@@ -134,7 +134,7 @@ Session.prototype.sendData = function() {
   if (this.block == 1) {
     console.log("Sending data, filename="+ self.filename);
   }
-  fs.open(self.filename, 'r', function(err, fp) {
+  fs.open(self.filename, 'r', 0666, function(err, fp) {
     if (err) {
       self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
       return;
