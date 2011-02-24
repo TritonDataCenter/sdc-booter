@@ -19,9 +19,9 @@ var pack = require('./pack'),
       EE = require('events').EventEmitter;
      sys = require('sys');
 
-var SERVER_HOST = config.host;
+var SERVER_HOST = config.listenIp;
 var SERVER_PORT = 69;
-var TFTPROOT = '/tftpboot';
+var TFTPROOT = config.tftpRoot;
 
 var sessions = {};
 
@@ -134,7 +134,7 @@ Session.prototype.sendData = function() {
   if (this.block == 1) {
     console.log("Sending data, filename="+ self.filename);
   }
-  fs.open(self.filename, 'r', function(err, fp) {
+  fs.open(self.filename, 'r', 0666, function(err, fp) {
     if (err) {
       self.sendError(ERR_FILE_NOT_FOUND, "File not found: " + self.filename);
       return;
