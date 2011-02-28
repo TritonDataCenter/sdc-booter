@@ -309,6 +309,7 @@ DHCPPacket.build_reply = function ( packet, data ) {
                         break;
                     // IP options
                     case 54: // server identifier
+                    case 3:  // router
                     case 1:  // subnet mask
                         var ip_octets = value.split('.');
                         pkt.options[opt] = [

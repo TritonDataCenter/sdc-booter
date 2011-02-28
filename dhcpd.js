@@ -16,6 +16,7 @@ var dgram = require('dgram'),
 
 var SERVER_HOST = config.listenIp;
 var DHCP_HOST   = config.dhcpIp;
+var DEFAULT_GW  = config.defaultGateway || "";
 var SERVER_PORT = 67;
 var TFTPROOT    = config.tftpRoot;
 
@@ -52,6 +53,9 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
                 }
             };
+            if (DEFAULT_GW != "") {
+                packet_opts['options']['3']=DEFAULT_GW;
+            }
             slog("> DHCPOFFER");
             break;
         case 'DHCPREQUEST':
@@ -67,6 +71,9 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
               }
             };
+            if (DEFAULT_GW != "") {
+                packet_opts['options']['3']=DEFAULT_GW;
+            }
             slog("> DHCPACK");
             break;
         default:
