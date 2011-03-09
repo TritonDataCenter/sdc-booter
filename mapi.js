@@ -6,18 +6,18 @@ var resttp = require('./deps/resttp'),
 
 getBootParams = function(mac, cb) {
   var mapi = resttp.using(config.mapiUrl).as(config.user, config.password);
-  mapi.GET({ pathname: "boot/" + mac }, function(code, body) {
-    console.log("mapi: GET /boot/" + mac + ": returned " + code);
+  mapi.GET({ pathname: "admin/boot/" + mac }, function(code, body) {
+    console.log("mapi: GET /admin/boot/" + mac + ": returned " + code);
     if ( code == 200 ) {
       cb(JSON.parse(body));
     }
     else {
-      var params = { address: mac, physical_network_name: "admin" };
-      mapi.POST({ pathname : "macs", params: params }, function(code, body) {
-        console.log("mapi: POST /boot/macs (params: " + params + "): returned " + code);
+      var params = { address: mac, nic_tag_name: "admin" };
+      mapi.POST({ pathname : "admin/nics", params: params }, function(code, body) {
+        console.log("mapi: POST /admin/macs (params: " + params + "): returned " + code);
         if ( code == 201 ) {
-          mapi.GET({ pathname: "boot/" + mac }, function(code, body) {
-            console.log("mapi: GET (2) /boot/" + mac + ": returned " + code);
+          mapi.GET({ pathname: "admin/boot/" + mac }, function(code, body) {
+            console.log("mapi: GET (2) /admin/boot/" + mac + ": returned " + code);
             if ( code == 200 ) {
               cb(JSON.parse(body));
             } else {
@@ -39,8 +39,8 @@ buildMenuLst = function(mac, c) {
     var module = c.boot_archive;
     var kernel = c.kernel;
     var extra = '';
-    for (var n in c.physical_networks) {
-      extra += "," + n + "_nic=" + c.physical_networks[n];
+    for (var n in c.nic_tags) {
+      extra += "," + n + "_nic=" + c.nic_tags[n];
     }
 
     return (
