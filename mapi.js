@@ -12,7 +12,7 @@ getBootParams = function(mac, cb) {
       cb(JSON.parse(body));
     }
     else {
-      var params = { address: mac, nic_tag_name: "admin" };
+      var params = { address: mac, nic_tag_names: "admin" };
       mapi.POST({ pathname : "admin/nics", params: params }, function(code, body) {
         console.log("mapi: POST /admin/macs (params: " + params + "): returned " + code);
         if ( code == 201 ) {
