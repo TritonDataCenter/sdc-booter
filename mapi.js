@@ -35,9 +35,13 @@ exports.getBootParams = getBootParams;
 
 buildMenuLst = function(mac, c) {
 		var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
-    var kargs = c.kernel_args;
-    var module = c.boot_archive;
-    var kernel = c.kernel;
+    var kargs_arr = [];
+    for (a in c.kernel_args) {
+      kargs_arr.push(a + '=' + c.kernel_args[a]);
+    }
+    var kargs = kargs_arr.join(',');
+    var module = '/os/' + c.platform + '/platform/i86pc/amd64/boot_archive';
+    var kernel = '/os/' + c.platform + '/platform/i86pc/kernel/amd64/unix';
     var extra = '';
     for (var n in c.nic_tags) {
       extra += "," + n + "_nic=" + c.nic_tags[n];
