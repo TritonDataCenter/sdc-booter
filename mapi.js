@@ -4,20 +4,30 @@ var resttp = require('./deps/resttp'),
         fs = require('fs'),
        sys = require('sys');
 
+function logRequest(method, args, code, body) {
+  console.log("MAPI: " + method + ": returned " + code + "\n" +
+      "== args ==\n" + sys.inspect(args) +
+      "\n== body ==\n" + sys.inspect(body) + "\n==\n");
+}
+
 getBootParams = function(mac, cb) {
   var mapi = resttp.using(config.mapiUrl).as(config.user, config.password);
-  mapi.GET({ pathname: "admin/boot/" + mac }, function(code, body) {
-    console.log("mapi: GET /admin/boot/" + mac + ": returned " + code);
+  var getArgs = { pathname: "admin/boot/" + mac };
+  mapi.GET(getArgs, function(code, body) {
+    logRequest('GET', getArgs, code, body);
     if ( code == 200 ) {
       cb(JSON.parse(body));
     }
     else {
-      var params = { address: mac, nic_tag_names: "admin" };
-      mapi.POST({ pathname : "admin/nics", params: params }, function(code, body) {
-        console.log("mapi: POST /admin/macs (params: " + params + "): returned " + code);
+      var postArgs = {
+        pathname : "admin/nics",
+        params: { address: mac, nic_tag_names: "admin" },
+      };
+      mapi.POST(postArgs, function(code, body) {
+        logRequest('POST', postArgs, code, body);
         if ( code == 201 ) {
-          mapi.GET({ pathname: "admin/boot/" + mac }, function(code, body) {
-            console.log("mapi: GET (2) /admin/boot/" + mac + ": returned " + code);
+          mapi.GET(getArgs, function(code, body) {
+            logRequest('GET (2)', getArgs, code, body);
             if ( code == 200 ) {
               cb(JSON.parse(body));
             } else {

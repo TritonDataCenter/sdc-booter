@@ -19,6 +19,7 @@ var DHCP_HOST   = config.dhcpIp;
 var DEFAULT_GW  = config.defaultGateway || "";
 var SERVER_PORT = 67;
 var TFTPROOT    = config.tftpRoot;
+var LEASE_TIME  = config.leaseTime;
 
 var sessions = {};
 var sock = null;
@@ -47,7 +48,7 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
               , 'file': 'pxegrub'
               , 'options':
                 { '1': '255.255.255.0'
-                , '51': 6000
+                , '51': LEASE_TIME
                 , '53': 'DHCPOFFER'
                 , '54': DHCP_HOST
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
@@ -65,7 +66,7 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
               , 'file': 'pxegrub'
               , 'options':
                 { '1': '255.255.255.0'
-                , '51': 6000
+                , '51': LEASE_TIME
                 , '53': 'DHCPACK'
                 , '54': DHCP_HOST
                 //, '150': '/00-50-56-32-cd-2d/menu.lst'
