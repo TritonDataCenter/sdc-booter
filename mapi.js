@@ -1,17 +1,31 @@
 var resttp = require('./deps/resttp'),
     config = require('./config').config,
+      slog = require('sys').log,
       path = require('path'),
         fs = require('fs'),
        sys = require('sys');
 
+var paramCache = {};
+
 function logRequest(method, args, code, body) {
-  console.log("MAPI: " + method + ": returned " + code + "\n" +
+  slog("MAPI: " + method + ": returned " + code + "\n" +
       "== args ==\n" + sys.inspect(args) +
       "\n== body ==\n" + sys.inspect(body) + "\n==\n");
 }
 
+function logError(err, resp, body) {
+  slog("MAPI error\n== err ==\n" + sys.inspect(err) +
+       "\n== resp ==\n" + sys.inspect(resp) +
+       "\n== body ==\n" + sys.inspect(body) + "\n==\n");
+}
+
 getBootParams = function(mac, cb) {
   var mapi = resttp.using(config.mapiUrl).as(config.user, config.password);
+  mapi.errcallback = function(err, resp, body) {
+    logError(err, resp, body);
+    cb(null);
+  }
+
   var getArgs = { pathname: "admin/boot/" + mac };
   mapi.GET(getArgs, function(code, body) {
     logRequest('GET', getArgs, code, body);
@@ -44,7 +58,7 @@ getBootParams = function(mac, cb) {
 exports.getBootParams = getBootParams;
 
 buildMenuLst = function(mac, c) {
-		var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
+    var kargs_debug = 'prom_debug=true,map_debug=true,kbm_debug=true';
     var kargs_arr = [];
     for (a in c.kernel_args) {
       kargs_arr.push(a + '=' + c.kernel_args[a]);
@@ -99,18 +113,27 @@ exports.buildMenuLst = buildMenuLst
 
 exports.writeMenuLst = function (mac, dir, cb) {
   var filename = dir + '/menu.lst.01' + mac.replace(/:/g, '').toUpperCase();
-  console.log("Writing " + filename);
+  slog("[" + mac + "] " + "Menu list filename='" + filename + "'");
   getBootParams(mac, function(c) {
     if (c == null) {
-      return null;
+      if (mac in paramCache) {
+        slog("[" + mac + "] " + "Using cached copy of boot params");
+        c = paramCache[mac];
+      } else {
+        cb(null);
+        return;
+      }
+    } else {
+      paramCache[mac] = c;
     }
+
     var menu = buildMenuLst(mac, c);
-    console.log("MENU LST\n==" + menu + "\n==");
+    slog("[" + mac + "] " + "menu.lst\n==" + menu + "\n==");
     path.exists(dir, function(exists) {
       if (!exists) {
         fs.mkdirSync(dir, 0775)
       }
-      console.log("about to write to " + filename);
+      slog("[" + mac + "] " + "About to write to '" + filename + "'");
       fs.writeFile(filename, menu, function(err) {
         if (err) throw err;
         cb(c);

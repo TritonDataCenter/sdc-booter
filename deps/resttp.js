@@ -138,7 +138,8 @@ var handleResponse = function(errcallback, callback) {
   return function(err, resp, body) {
     if (err) {
       errcallback(err, resp, body);
+    } else {
+      callback(resp.statusCode, body);
     }
-    callback(resp.statusCode, body);
   }
 }
