@@ -144,7 +144,7 @@ buildSmartOSMenuLst = function(mac, c) {
     , "  module " + module
     , ""
     , "title Live 64-bit Rescue (no importing zpool)"
-    , "  kernel " + kernel + " -kdv -B " + kargs + extra + ',noimport=true'
+    , "  kernel " + kernel + " -B " + kargs + extra + ',noimport=true'
     , "  module " + module
     , ""
     ].join('\n'));
