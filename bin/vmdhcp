@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+/*
+ * Copyright (c) 2011 Joyent Inc., All rights reserved.
+ *
+ */
+
+var sys = require('sys'),
+    act = require('../action');
+
+var SOCK = '/tmp/vmdhcpd.sock';
+
+function out()
+{
+    console.log.apply(this, arguments);
+}
+
+function usage()
+{
+    out("Usage:", process.argv[1], " <command> [options]\n");
+    out("  Commands:\n");
+    out("    listen <interface> <ip> ... listen on blah blah");
+    out("");
+    process.exit(1);
+}
+
+
+function die(error)
+{
+    out('fatal:', error);
+    process.exit(1);
+}
+
+function main()
+{
+    var uuid;
+    var debug = false;
+
+    if (process.argv.length < 3) {
+        usage();
+    }
+
+    switch (process.argv[2]) {
+    case 'listen':
+        var iface = process.argv[3];
+        var ip = process.argv[4];
+        if (!iface) {
+            console.log("Must supply interface for " + process.argv[2] + "!");
+            usage();
+
+        } else if (!ip) {
+            console.log("Must supply listen ip for " + process.argv[2] + "!");
+            usage();
+
+        } else {
+            act.sendAction(process.argv[2], { 'ip': ip, 'interface': iface },
+                SOCK, function (err, result)
+                {
+                    if (err) {
+                        die(err);
+                    }
+                    //if (debug) {
+                        console.log(JSON.stringify(result));
+                    //}
+                }
+            );
+        }
+        break;
+    default:
+        console.log("Invalid command '" + process.argv[2] + "'");
+        usage();
+        break;
+    }
+}
+
+main();
