@@ -22,9 +22,23 @@ var LISTENERS = {};
 
 //XXX: on startup, validate that we have all of the options in config.js!!!
 
-//var interface = config.interface;
 var filter = 'udp dst port 67 and ip broadcast';
 
+
+function checkVMopts(payload) {
+    var pre = "vmadm payload did not contain the key: ";
+    if (!payload.hasOwnProperty('results')) {
+        return pre + 'results';
+    }
+    var keys = ['ip', 'gateway', 'netmask'];
+    for (var i in keys) {
+        var key = keys[i];
+        if (!payload.results.hasOwnProperty(key)) {
+          return pre + key;
+        }
+    }
+    return;
+}
 
 function handlePacket(data, sock, host) {
     var in_packet = dhcp.DHCPPacket.parse(data);
@@ -40,6 +54,13 @@ function handlePacket(data, sock, host) {
           return;
         }
 
+        slog(pre + "vmadmd returned:" + sys.inspect(result));
+        var checkRes = checkVMopts(result);
+        if (checkRes != null) {
+            slog(pre + checkRes + '.  Not responding to DHCP request.');
+            return;
+        }
+
         var packet_opts = {
               'siaddr': host
             , 'yiaddr': result.results.ip
@@ -52,6 +73,7 @@ function handlePacket(data, sock, host) {
               , '54': host
               }
           };
+        slog(pre + "packet opts:" + sys.inspect(packet_opts));
 
         // decide what to do based on message type (option 53)
         switch (dhcp.DHCP_MESSAGE_TYPE[in_packet.options[53]]) {
@@ -140,6 +162,9 @@ function startDaemon()
 {
     if (DEBUG) {
         slog('==> startDaemon()');
+    }
+    if (!LEASE_TIME) {
+        throw('ERROR: must specify lease time in config.js!');
     }
 
     net.createServer(function (stream) {
