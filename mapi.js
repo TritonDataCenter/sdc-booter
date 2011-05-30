@@ -5,57 +5,82 @@ var resttp = require('./deps/resttp'),
         fs = require('fs'),
        sys = require('sys');
 
-var paramCache = {};
+function Mapi() {
+  this.paramCache = {};
+  this.client = resttp.using(config.mapiUrl).as(config.user, config.password);
+  this.log = true;
+}
+exports.Mapi = Mapi;
 
-function logRequest(method, args, code, body) {
+
+Mapi.prototype.logRequest = function(method, args, code, body) {
+  if (!this.log) {
+    return;
+  }
   slog("MAPI: " + method + ": returned " + code + "\n" +
       "== args ==\n" + sys.inspect(args) +
       "\n== body ==\n" + sys.inspect(body) + "\n==\n");
 }
 
-function logError(err, resp, body) {
+
+Mapi.prototype.logError = function(err, resp, body) {
+  if (!this.log) {
+    return;
+  }
   slog("MAPI error\n== err ==\n" + sys.inspect(err) +
        "\n== resp ==\n" + sys.inspect(resp) +
        "\n== body ==\n" + sys.inspect(body) + "\n==\n");
 }
 
-getBootParams = function(mac, cb) {
-  var mapi = resttp.using(config.mapiUrl).as(config.user, config.password);
-  mapi.errcallback = function(err, resp, body) {
-    logError(err, resp, body);
+
+Mapi.prototype.parseJSON = function (body) {
+  try {
+    var json = JSON.parse(body);
+  } catch (err) {
+    if (this.log) {
+      slog("Error parsing JSON: " + err + "\n== json ==\n" + body + "\n==\n");
+    }
+    return null;
+  }
+  return json;
+}
+
+
+Mapi.prototype.getBootParams = function(mac, cb) {
+  var self = this;
+  this.client.errcallback = function(err, resp, body) {
+    self.logError(err, resp, body);
     cb(null);
   }
 
   var getArgs = { pathname: "admin/boot/" + mac };
-  mapi.GET(getArgs, function(code, body) {
-    logRequest('GET', getArgs, code, body);
-    if ( code == 200 ) {
-      cb(JSON.parse(body));
+  this.client.GET(getArgs, function(code, body) {
+    self.logRequest('GET', getArgs, code, body);
+    if (code == 200) {
+      return cb(self.parseJSON(body));
     }
-    else {
-      var postArgs = {
-        pathname : "admin/nics",
-        params: { address: mac, nic_tag_names: "admin" },
-      };
-      mapi.POST(postArgs, function(code, body) {
-        logRequest('POST', postArgs, code, body);
-        if ( code == 201 ) {
-          mapi.GET(getArgs, function(code, body) {
-            logRequest('GET (2)', getArgs, code, body);
-            if ( code == 200 ) {
-              cb(JSON.parse(body));
-            } else {
-              cb(null, JSON.parse(body));
-            }
-          });
-        } else {
-            cb(null, JSON.parse(body));
-        }
-      });
-    }
+
+    var postArgs = {
+      pathname : "admin/nics",
+      params: { address: mac, nic_tag_names: "admin" },
+    };
+    self.client.POST(postArgs, function(code, body) {
+      self.logRequest('POST', postArgs, code, body);
+      if (code == 201) {
+        self.client.GET(getArgs, function(code, body) {
+          self.logRequest('GET (2)', getArgs, code, body);
+          if (code == 200) {
+            return cb(self.parseJSON(body));
+          }
+          return cb(null);
+        });
+      } else {
+          return cb(null);
+      }
+    });
   });
 }
-exports.getBootParams = getBootParams;
+
 
 buildHVMMenuLst = function(mac, c) {
     var kargs_arr = [];
@@ -150,7 +175,8 @@ buildSmartOSMenuLst = function(mac, c) {
     ].join('\n'));
 }
 
-buildMenuLst = function(mac, c) {
+
+Mapi.prototype.buildMenuLst = function(mac, c) {
   if (c.platform.substr(0,4) === "HVM-") {
     return buildHVMMenuLst(mac, c);
   } else {
@@ -158,25 +184,25 @@ buildMenuLst = function(mac, c) {
   }
 }
 
-exports.buildMenuLst = buildMenuLst;
 
-exports.writeMenuLst = function (mac, dir, cb) {
+Mapi.prototype.writeMenuLst = function (mac, dir, cb) {
+  var self = this;
   var filename = dir + '/menu.lst.01' + mac.replace(/:/g, '').toUpperCase();
   slog("[" + mac + "] " + "Menu list filename='" + filename + "'");
-  getBootParams(mac, function(c) {
+  this.getBootParams(mac, function(c) {
     if (c == null) {
-      if (mac in paramCache) {
+      if (mac in self.paramCache) {
         slog("[" + mac + "] " + "Using cached copy of boot params");
-        c = paramCache[mac];
+        c = self.paramCache[mac];
       } else {
         cb(null);
         return;
       }
     } else {
-      paramCache[mac] = c;
+      self.paramCache[mac] = c;
     }
 
-    var menu = buildMenuLst(mac, c);
+    var menu = self.buildMenuLst(mac, c);
     slog("[" + mac + "] " + "menu.lst\n==" + menu + "\n==");
     path.exists(dir, function(exists) {
       if (!exists) {

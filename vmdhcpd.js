@@ -164,7 +164,7 @@ function startDaemon()
         slog('==> startDaemon()');
     }
     if (!LEASE_TIME) {
-        throw('ERROR: must specify lease time in config.js!');
+        throw(new Error('ERROR: must specify lease time in config.js!'));
     }
 
     net.createServer(function (stream) {

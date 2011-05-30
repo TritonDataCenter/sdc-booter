@@ -10,7 +10,7 @@ var dgram = require('dgram'),
      slog = require('sys').log,
        fs = require('fs'),
      dhcp = require('./dhcp'),
-     mapi = require('./mapi'),
+     Mapi = require('./mapi').Mapi,
   sprintf = require('./sprintf'),
    config = require('./config').config;
 
@@ -23,6 +23,7 @@ var LEASE_TIME  = config.leaseTime;
 
 var sessions = {};
 var sock = null;
+var mapi = new Mapi();
 
 sock = dgram.createSocket("udp4", function (msg, peer) {
     var in_packet = dhcp.DHCPPacket.parse(msg);

@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 
-var mapi = require('../mapi');
+var Mapi = require('../mapi').Mapi;
 
 var mac = process.argv[2];
+var opt = process.argv[3];
 if (!mac) {
-  console.log("Usage: " + process.argv[1] + " mac_addr");
+  console.log("Usage: " + process.argv[1] + " <mac_addr> [-v]");
   process.exit(1);
+}
+
+var mapi = new Mapi();
+mapi.log = false;
+
+if (opt && opt == '-v') {
+    mapi.log = true;
 }
 
 mapi.getBootParams(mac, function(params, err) {

@@ -5,6 +5,8 @@
 DESTROOT=$(DESTDIR)/smartdc/booter
 ROOT=$(PWD)
 
+.PHONY: test
+
 all: update pcap
 
 update:
@@ -39,6 +41,9 @@ install-pcap:
 		$(DESTROOT)/node_modules/pcap/build/default/pcap_binding.node
 	/usr/bin/install -m 0444 -T $(ROOT)/node_modules/pcap/build/default/pcap_binding_1.o \
 		$(DESTROOT)/node_modules/pcap/build/default/pcap_binding_1.o
+
+test:
+	node_modules/nodeunit/bin/nodeunit test
 
 clean:
 	(cd node_modules/pcap && node-waf configure clean && rm -rf build)
