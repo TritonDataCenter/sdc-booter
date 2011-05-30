@@ -17,12 +17,8 @@ var DEBUG       = true; // TODO: move to cmdline/env var
 var LEASE_TIME  = config.leaseTime;
 var SERVER_PORT = 67;
 var SOCK        = '/tmp/vmadmd.sock';
-
-var LISTENERS = {};
-
-//XXX: on startup, validate that we have all of the options in config.js!!!
-
-var filter = 'udp dst port 67 and ip broadcast';
+var LISTENERS   = {};
+var filter      = 'udp dst port 67 and ip broadcast';
 
 
 function checkVMopts(payload) {

@@ -1,4 +1,4 @@
-var resttp = require('./deps/resttp'),
+var resttp = require('resttp'),
     config = require('./config').config,
       slog = require('sys').log,
       path = require('path'),
