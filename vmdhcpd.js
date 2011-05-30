@@ -23,13 +23,13 @@ var filter      = 'udp dst port 67 and ip broadcast';
 
 function checkVMopts(payload) {
     var pre = "vmadm payload did not contain the key: ";
-    if (!payload.hasOwnProperty('results')) {
-        return pre + 'results';
+    if (!payload.hasOwnProperty('data')) {
+        return pre + 'data';
     }
     var keys = ['ip', 'gateway', 'netmask'];
     for (var i in keys) {
         var key = keys[i];
-        if (!payload.results.hasOwnProperty(key)) {
+        if (!payload.data.hasOwnProperty(key)) {
           return pre + key;
         }
     }
@@ -59,10 +59,10 @@ function handlePacket(data, sock, host) {
 
         var packet_opts = {
               'siaddr': host
-            , 'yiaddr': result.results.ip
+            , 'yiaddr': result.data.ip
             , 'options':
-              { '1': result.results.netmask
-              , '3': result.results.gateway
+              { '1': result.data.netmask
+              , '3': result.data.gateway
               // XXX: get this from somewhere?
               , '6': '8.8.8.8.'
               // XXX: anything else, eg: hostname?

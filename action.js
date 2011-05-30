@@ -19,15 +19,18 @@ exports.sendAction = function(action, data, socket, callback)
             chunks = buffer.split('\n');
             while (chunks.length > 1) {
                 result = JSON.parse(chunks.shift());
-                if (result.errors) {
-                    //throw new Error(JSON.stringify(result));
-                    throw JSON.stringify(result);
-                }
-                if (result.update) {
+                switch (result.type) {
+                case 'update':
                     out(result);
-                } else {
+                    break;
+                case 'success':
                     callback(null, result);
                     stream.end();
+                    break;
+                case 'failure':
+                default:
+                    //throw new Error(JSON.stringify(result));
+                    callback(JSON.stringify(result));
                 }
             }
             buffer = chunks.pop();
