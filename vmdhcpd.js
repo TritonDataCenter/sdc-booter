@@ -43,7 +43,7 @@ function handlePacket(data, sock, host) {
       slog(pre + msg);
     });
 
-    act.sendAction('net', { "mac": in_packet.chaddr }, SOCK,
+    act.sendAction('mac', { "mac": in_packet.chaddr }, SOCK,
         function(err, result) {
         if (err) {
           slog(pre + msg);
