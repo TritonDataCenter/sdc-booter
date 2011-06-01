@@ -9,6 +9,7 @@ var sys = require('sys'),
     dgram = require('dgram'),
     pcap = require("pcap"),
     dhcp = require('./dhcp'),
+    dateformat = require('dateformat'),
     config = require('./config').config,
     act = require('./action'),
     slog = require('sys').log;
@@ -20,6 +21,20 @@ var SOCK        = '/tmp/vmadmd.sock';
 var LISTENERS   = {};
 var filter      = 'udp dst port 67 and ip broadcast';
 
+// Sends arguments to console.log with UTC datestamp prepended.
+function log()
+{
+    var args = [];
+    var now = new Date();
+
+    // create new array of arguments from 'arguments' object, after timestamp
+    args.push(now.format('UTC:[yyyy-mm-dd HH:MM:ss.l Z]:'));
+    for (var i = 0; i < arguments.length; i++) {
+        args.push(arguments[i]);
+    }
+
+    console.log.apply(this, args);
+}
 
 function checkVMopts(payload) {
     var pre = "vmadm payload did not contain the key: ";
@@ -157,53 +172,82 @@ function startListening(host, iface, callback) {
 function startDaemon()
 {
     if (DEBUG) {
-        slog('==> startDaemon()');
-    }
-    if (!LEASE_TIME) {
-        throw(new Error('ERROR: must specify lease time in config.js!'));
+        log('==> startDaemon()');
     }
 
     net.createServer(function (stream) {
         var chunks, buffer = '';
         stream.setEncoding('utf8');
         stream.on('connect', function () {
-            slog('==> connection on fd', stream.fd);
+            log('==> connection on fd', stream.fd);
         });
         stream.on('data', function (chunk) {
             var request;
-            /*
-             * command messages are sent as JSON\n\n, we split then keep the
-             * last chunk in the array in the buffer for next time.
-             */
+            var string_response;
+
+             // command messages are sent as JSON\n\n, we split then keep the
+             // last chunk in the array in the buffer for next time.
 
             function responder(err, results, update)
             {
                 var res = {};
+
+                // if the request included an id, use the same id in responses
                 if (request.hasOwnProperty('id')) {
                     res.id = request.id;
                 }
+
+                // the result will have a .type of one of the following:
+                //
+                //   {'failure','update','success'}
+                //
+                // it will also have a 'data' member with more details.
                 if (err) {
-                    res.errors = err;
+                    res.type = 'failure';
+                    res.data = err;
                 } else {
                     if (update) {
-                        res.update = update;
-                    }
-                    if (results) {
-                        res.results = results;
+                        res.type = 'update';
+                        res.data = update;
+                    } else {
+                        res.type = 'success';
+                        if (results) {
+                            res.data = results;
+
+                            // done with this job now.
+                            if (request.hasOwnProperty('payload') &&
+                                request.payload.hasOwnProperty('uuid') &&
+                                VMS.hasOwnProperty(request.payload.uuid)) {
+
+                                VMS[request.payload.uuid].action = null;
+                            }
+                        }
                     }
                 }
-                stream.write(JSON.stringify(res) + '\n');
+
+                // Send the string form of the JSON to the client
+                if (stream.writable) {
+                    string_response = JSON.stringify(res);
+                    log('SENDING:', string_response);
+                    stream.write(string_response + '\n');
+                }
             }
 
+            // we need to handle messages that may be broken up into multiple
+            // buffers, basically just keep reading and split results on '\n\n'
             buffer += chunk.toString();
             chunks = buffer.split('\n\n');
             while (chunks.length > 1) {
                 try {
                     request = JSON.parse(chunks.shift());
                 } catch (err) {
-                    slog('FAIL: Unable to parse input:', err);
-                    stream.write(JSON.stringify({'errors': 'Invalid Input'}) +
-                    '\n');
+                    log('FAIL: Unable to parse input:', err);
+                    if (stream.writable) {
+                        string_response = JSON.stringify({'type': 'failure',
+                            'data': 'Invalid Input'});
+                        log('SENDING:', string_response);
+                        stream.write(string_response + '\n');
+                    }
                     continue;
                 }
                 handleMessage(request, responder);
