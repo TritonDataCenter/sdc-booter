@@ -7,7 +7,7 @@ ROOT=$(PWD)
 
 .PHONY: test
 
-all: update pcap
+all: pcap
 
 update:
 	git pull --rebase

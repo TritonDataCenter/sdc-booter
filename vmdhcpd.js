@@ -159,6 +159,25 @@ function startListening(host, iface, callback) {
       }
   });
 
+  // Detect an interface being unplumbed out from under us - when the interface
+  // goes away, pcap will emit an empty read.  If the interface no longer shows
+  // up in the device list, close the capture session.
+  pcap_session.on('empty_read', function () {
+    slog("empty read on interface '" + iface + "'");
+    var devs = this.findalldevs();
+
+    for (var i in devs) {
+      if (devs[i].address == iface) {
+        slog("interface '" + iface + "' still plumbed - not closing listeners");
+        return;
+      }
+    }
+    slog("closing pcap session for interface '" + iface + "'");
+    this.close();
+    delete(LISTENERS[iface]);
+  });
+
+
   LISTENERS[iface] = {
     'socket': sock,
     'pcap': pcap_session,
