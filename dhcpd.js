@@ -9,9 +9,9 @@
 var dgram = require('dgram'),
      slog = require('sys').log,
        fs = require('fs'),
-     dhcp = require('./dhcp'),
-     Mapi = require('./mapi').Mapi,
-  sprintf = require('./sprintf'),
+     dhcp = require('./lib/dhcp'),
+     Mapi = require('./lib/mapi').Mapi,
+  sprintf = require('./lib/sprintf'),
    config = require('./config').config;
 
 var SERVER_HOST = config.listenIp;

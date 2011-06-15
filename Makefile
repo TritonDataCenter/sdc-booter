@@ -15,22 +15,23 @@ update:
 pcap:
 	(cd node_modules/pcap && node-waf configure clean build)
 
-install: install-dirs install-bins install-nonbins install-pcap
+install: pcap install-dirs install-bins install-nonbins install-pcap
 
 install-dirs:
 	mkdir -m 0755 -p $(DESTROOT)/bin
+	mkdir -m 0755 -p $(DESTROOT)/lib
 	mkdir -m 0755 -p $(DESTROOT)/node_modules/pcap/build/default
 
 install-bins:
 	/usr/bin/install -m 0555 -T $(ROOT)/bin/vmdhcp $(DESTROOT)/bin/vmdhcp
-	/usr/bin/install -m 0555 -T $(ROOT)/vmdhcpd.js $(DESTROOT)/vmdhcpd
+	/usr/bin/install -m 0555 -T $(ROOT)/bin/vmdhcpd $(DESTROOT)/bin/vmdhcpd
 
 install-nonbins:
-	/usr/bin/install -m 0444 -T $(ROOT)/action.js $(DESTROOT)/action.js
-	/usr/bin/install -m 0444 -T $(ROOT)/config.js $(DESTROOT)/config.js
-	/usr/bin/install -m 0444 -T $(ROOT)/dhcp.js $(DESTROOT)/dhcp.js
-	/usr/bin/install -m 0444 -T $(ROOT)/pack.js $(DESTROOT)/pack.js
-	/usr/bin/install -m 0444 -T $(ROOT)/sprintf.js $(DESTROOT)/sprintf.js
+	/usr/bin/install -m 0444 -T $(ROOT)/lib/action.js $(DESTROOT)/lib/action.js
+	/usr/bin/install -m 0444 -T $(ROOT)/lib/dhcp.js $(DESTROOT)/lib/dhcp.js
+	/usr/bin/install -m 0444 -T $(ROOT)/lib/pack.js $(DESTROOT)/lib/pack.js
+	/usr/bin/install -m 0444 -T $(ROOT)/lib/sprintf.js $(DESTROOT)/lib/sprintf.js
+	/usr/bin/install -m 0555 -T $(ROOT)/lib/vmdhcpd.js $(DESTROOT)/lib/vmdhcpd.js
 
 install-pcap:
 	/usr/bin/install -m 0444 -T $(ROOT)/node_modules/pcap/pcap.js \
