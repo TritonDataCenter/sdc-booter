@@ -18,7 +18,9 @@ function usage()
 {
     out("Usage:", process.argv[1], " <command> [options]\n");
     out("  Commands:\n");
-    out("    listen <interface> ... listen for dhcp requests on interface");
+    out("    start <interface> ... start the dhcp service on interface");
+    out("    stop <interface> .... stop the dhcp service on interface");
+    out("    list [-v] ........... list interfaces the service is running on");
     out("");
     process.exit(1);
 }
@@ -40,7 +42,8 @@ function main()
     }
 
     switch (process.argv[2]) {
-    case 'listen':
+    case 'start':
+    case 'stop':
         var iface = process.argv[3];
         if (!iface) {
             console.log("Must supply interface for " + process.argv[2] + "!");
@@ -53,12 +56,28 @@ function main()
                     if (err) {
                         die(err);
                     }
-                    //if (debug) {
-                        console.log(JSON.stringify(result));
-                    //}
+                    console.log(result.data);
                 }
             );
         }
+        break;
+    case 'list':
+        var verbose = false;
+        if (process.argv[3] == '-v') {
+          verbose = true;
+        }
+        act.sendAction(process.argv[2], { 'verbose': verbose },
+                SOCK, function (err, result)
+                {
+                    if (err) {
+                        die(err);
+                    }
+                    var ifaces = result.data;
+                    for (var i in ifaces) {
+                      out(ifaces[i].join("\t"));
+                    }
+                }
+            );
         break;
     default:
         console.log("Invalid command '" + process.argv[2] + "'");
