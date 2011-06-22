@@ -1,6 +1,6 @@
 var sys      = require('sys'),
     testCase = require('nodeunit').testCase,
-    client   = require('../mapi').Mapi;
+    client   = require('../lib/mapi').Mapi;
 
 function mockMAPI() {
   this.returns = {
