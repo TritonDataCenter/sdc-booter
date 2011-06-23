@@ -57,7 +57,7 @@ dhcpd-install-dirs:
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/request
 
 $(DESTDIR)/%: %
-	$(INSTALL) -T $(ROOT)/$^ $@
+	$(INSTALL) $(ROOT)/$^ $@
 
 test:
 	node_modules/nodeunit/bin/nodeunit test
