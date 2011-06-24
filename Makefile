@@ -3,7 +3,7 @@
 #
 
 ROOT=$(PWD)
-INSTALL=/usr/bin/install
+INSTALL=install
 
 VMDHCP_FILES = \
 	lib/action.js \
