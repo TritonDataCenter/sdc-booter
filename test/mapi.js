@@ -44,7 +44,7 @@ var postParams = { pathname: 'admin/nics',
 exports['getBootParams'] = testCase({
   setUp: function(done) {
     this.mapi = new client();
-    this.mapi.log = false;
+    this.mapi.logging = false;
     this.fakeClient = new mockMAPI();
     this.mapi.client = this.fakeClient;
     done();
@@ -134,7 +134,26 @@ exports['getBootParams'] = testCase({
       test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
       test.done();
     });
-  }
+  },
+
+  'does not do a POST if first GET fails with non-404': function(test) {
+    var self = this;
+    test.expect(3);
+    this.mapi.client.returns['GET'] = [
+      [ 409, json],
+    ];
+    this.mapi.client.returns['POST'] = [
+      [ 201, null],
+    ];
+
+    this.mapi.getBootParams(mac, function(ret) {
+      test.equal(ret, null);
+      test.deepEqual(self.mapi.client.calls['GET'], [ getParams ]);
+      test.deepEqual(self.mapi.client.calls['POST'], [ ]);
+      test.done();
+    });
+  },
+
 
 });
 
