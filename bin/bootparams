@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var Mapi = require('../mapi').Mapi;
+var Mapi = require('../lib/mapi').Mapi;
 
 var mac = process.argv[2];
 var opt = process.argv[3];
@@ -10,10 +10,10 @@ if (!mac) {
 }
 
 var mapi = new Mapi();
-mapi.log = false;
+mapi.logging = false;
 
 if (opt && opt == '-v') {
-    mapi.log = true;
+    mapi.logging = true;
 }
 
 mapi.getBootParams(mac, function(params, err) {
