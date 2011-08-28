@@ -25,6 +25,31 @@ var sessions = {};
 var sock = null;
 var mapi = new Mapi();
 
+
+function build_packet_opts(key, msg_type) {
+    var response_type = msg_type == 'DHCPDISCOVER' ? 'DHCPOFFER' : 'DHCPACK';
+
+    slog(key + "< " + msg_type);
+
+    var packet_opts = {
+        'siaddr': DHCP_HOST
+      , 'file': 'pxegrub'
+      , 'options':
+        // XXX: this should be out of the config!
+        { '1': '255.255.255.0'
+        , '51': LEASE_TIME
+        , '53': response_type
+        , '54': DHCP_HOST
+        }
+    };
+    if (DEFAULT_GW != "") {
+        packet_opts['options']['3']=DEFAULT_GW;
+    }
+
+    slog(key + "> " + response_type);
+    return packet_opts;
+}
+
 sock = dgram.createSocket("udp4", function (msg, peer) {
     var in_packet = dhcp.DHCPPacket.parse(msg);
     var key = "[" + in_packet.chaddr + "] ";
@@ -42,44 +67,15 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
     });
 
     // decide what to do based on message type (option 53)
-    switch (dhcp.DHCP_MESSAGE_TYPE[in_packet.options[53]]) {
+    var msg_type = dhcp.DHCP_MESSAGE_TYPE[in_packet.options[53]];
+    switch (msg_type) {
         case 'DHCPDISCOVER':
-            slog(key + "< DHCPDISCOVER");
-            packet_opts = {
-                'siaddr': DHCP_HOST
-              , 'file': 'pxegrub'
-              , 'options':
-                { '1': '255.255.255.0'
-                , '51': LEASE_TIME
-                , '53': 'DHCPOFFER'
-                , '54': DHCP_HOST
-                //, '150': '/00-50-56-32-cd-2d/menu.lst'
-                }
-            };
-            if (DEFAULT_GW != "") {
-                packet_opts['options']['3']=DEFAULT_GW;
-            }
-            slog(key + "> DHCPOFFER");
-            break;
         case 'DHCPREQUEST':
-            slog(key + "< DHCPREQUEST");
-            packet_opts = {
-                'siaddr': DHCP_HOST
-              , 'file': 'pxegrub'
-              , 'options':
-                { '1': '255.255.255.0'
-                , '51': LEASE_TIME
-                , '53': 'DHCPACK'
-                , '54': DHCP_HOST
-                //, '150': '/00-50-56-32-cd-2d/menu.lst'
-              }
-            };
-            if (DEFAULT_GW != "") {
-                packet_opts['options']['3']=DEFAULT_GW;
-            }
-            slog(key + "> DHCPACK");
+            packet_opts = build_packet_opts(key, msg_type);
             break;
         default:
+            slog(key + "< " + msg_type + ": not responding");
+            return;
             break;
     }
 
@@ -89,8 +85,7 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
         return;
       }
       packet_opts['yiaddr'] = config.ip;
-      // XXX: rename to netmask
-      packet_opts.options['1'] = config.subnet;
+      packet_opts.options['1'] = config.netmask;
 
       out_packet = dhcp.DHCPPacket.build_reply(in_packet, packet_opts);
       var out = out_packet.raw();
