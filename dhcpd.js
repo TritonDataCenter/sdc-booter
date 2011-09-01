@@ -20,6 +20,7 @@ var DEFAULT_GW  = config.defaultGateway || "";
 var SERVER_PORT = 67;
 var TFTPROOT    = config.tftpRoot;
 var LEASE_TIME  = config.leaseTime;
+var NETMASK     = config.netmask;
 
 var sessions = {};
 var sock = null;
@@ -36,7 +37,7 @@ function build_packet_opts(key, msg_type) {
       , 'file': 'pxegrub'
       , 'options':
         // XXX: this should be out of the config!
-        { '1': '255.255.255.0'
+        { '1': NETMASK
         , '51': LEASE_TIME
         , '53': response_type
         , '54': DHCP_HOST
