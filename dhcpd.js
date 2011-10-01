@@ -37,7 +37,6 @@ function build_packet_opts(key, msg_type) {
         'siaddr': DHCP_HOST
       , 'file': 'pxegrub'
       , 'options':
-        // XXX: this should be out of the config!
         { '1': NETMASK
         , '51': LEASE_TIME
         , '53': response_type
