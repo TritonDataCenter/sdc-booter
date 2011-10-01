@@ -35,6 +35,7 @@ mockMAPI.prototype.POST = function(args, cb) {
 
 
 var mac = '90:b8:d0:53:3e:42';
+var ip = '0.0.0.0';
 var html = '<html>an html string</html>';
 var json = '{ "one": "two" }';
 var getParams = { pathname: 'admin/boot/' + mac };
@@ -57,7 +58,7 @@ exports['getBootParams'] = testCase({
       [ 200, json],
     ];
 
-    this.mapi.getBootParams(mac, function(ret) {
+    this.mapi.getBootParams(mac, ip, function(ret) {
       test.deepEqual(ret, JSON.parse(json));
       test.deepEqual(self.mapi.client.calls['GET'], [ getParams ]);
       test.deepEqual(self.mapi.client.calls['POST'], [ ]);
@@ -76,7 +77,7 @@ exports['getBootParams'] = testCase({
       [ 201, null],
     ];
 
-    this.mapi.getBootParams(mac, function(ret) {
+    this.mapi.getBootParams(mac, ip, function(ret) {
       test.equal(ret, null);
       test.deepEqual(self.mapi.client.calls['GET'], [ getParams, getParams ]);
       test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
@@ -91,7 +92,7 @@ exports['getBootParams'] = testCase({
       [ 200, html],
     ];
 
-    this.mapi.getBootParams(mac, function(ret) {
+    this.mapi.getBootParams(mac, ip, function(ret) {
       test.equal(ret, null);
       test.deepEqual(self.mapi.client.calls['GET'], [ getParams]);
       test.deepEqual(self.mapi.client.calls['POST'], [ ]);
@@ -109,7 +110,7 @@ exports['getBootParams'] = testCase({
       [ 404, html],
     ];
 
-    this.mapi.getBootParams(mac, function(ret) {
+    this.mapi.getBootParams(mac, ip, function(ret) {
       test.equal(ret, null);
       test.deepEqual(self.mapi.client.calls['GET'], [ getParams]);
       test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
@@ -128,7 +129,7 @@ exports['getBootParams'] = testCase({
       [ 201, null],
     ];
 
-    this.mapi.getBootParams(mac, function(ret) {
+    this.mapi.getBootParams(mac, ip, function(ret) {
       test.equal(ret, null);
       test.deepEqual(self.mapi.client.calls['GET'], [ getParams, getParams ]);
       test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
@@ -146,7 +147,7 @@ exports['getBootParams'] = testCase({
       [ 201, null],
     ];
 
-    this.mapi.getBootParams(mac, function(ret) {
+    this.mapi.getBootParams(mac, ip, function(ret) {
       test.equal(ret, null);
       test.deepEqual(self.mapi.client.calls['GET'], [ getParams ]);
       test.deepEqual(self.mapi.client.calls['POST'], [ ]);
@@ -154,6 +155,52 @@ exports['getBootParams'] = testCase({
     });
   },
 
+  'requests former IP on first GET': function(test) {
+    var self = this;
+    var newIp = '1.2.3.4';
+    test.expect(3);
+    this.mapi.client.returns['GET'] = [
+      [ 200, json],
+    ];
+
+    var args = {};
+    for (var a in getParams) {
+      args[a] = getParams[a];
+    }
+    args['ip'] = newIp;
+
+    this.mapi.getBootParams(mac, newIp, function(ret) {
+      test.deepEqual(ret, JSON.parse(json));
+      test.deepEqual(self.mapi.client.calls['GET'], [ args ]);
+      test.deepEqual(self.mapi.client.calls['POST'], [ ]);
+      test.done();
+    });
+  },
+
+  'requests former IP on second GET': function(test) {
+    var self = this;
+    var newIp = '1.2.3.4';
+    test.expect(3);
+    this.mapi.client.returns['GET'] = [
+      [ 404, json],
+      [ 200, html],
+    ];
+    this.mapi.client.returns['POST'] = [
+      [ 201, null],
+    ];
+    var args = {};
+    for (var a in getParams) {
+      args[a] = getParams[a];
+    }
+    args['ip'] = newIp;
+
+    this.mapi.getBootParams(mac, newIp, function(ret) {
+      test.equal(ret, null);
+      test.deepEqual(self.mapi.client.calls['GET'], [ args, args ]);
+      test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
+      test.done();
+    });
+  },
 
 });
 

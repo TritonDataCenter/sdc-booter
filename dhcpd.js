@@ -10,6 +10,7 @@ var dgram = require('dgram'),
      slog = require('sys').log,
        fs = require('fs'),
      dhcp = require('./lib/dhcp'),
+  menulst = require('./lib/menulst'),
      Mapi = require('./lib/mapi').Mapi,
   sprintf = require('./lib/sprintf'),
    config = require('./config').config;
@@ -54,7 +55,7 @@ function build_packet_opts(key, msg_type) {
 sock = dgram.createSocket("udp4", function (msg, peer) {
     var in_packet = dhcp.DHCPPacket.parse(msg);
     var key = "[" + in_packet.chaddr + "] ";
-    slog(key + "address=" + peer.address + ":" + peer.port);
+    slog(key + "src_address=" + peer.address + ":" + peer.port);
 
     // Print the whole packet in hex
     if (0) {
@@ -80,27 +81,34 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
             break;
     }
 
-    mapi.writeMenuLst(in_packet.chaddr, TFTPROOT, function(config) {
-      if (config == null) {
+    mapi.getBootParams(in_packet.chaddr, peer.address, function(params) {
+      if (params == null) {
         slog(key + "No config returned from MAPI. Not sending reply");
         return;
       }
-      packet_opts['yiaddr'] = config.ip;
-      packet_opts.options['1'] = config.netmask;
 
-      out_packet = dhcp.DHCPPacket.build_reply(in_packet, packet_opts);
-      var out = out_packet.raw();
-      res = sock.send(out, 0, out.length, 68, '255.255.255.255', function (err, bytes) {
-          if (err) throw err;
-          slog(key + "Wrote " + bytes + " bytes to socket.");
+      menulst.writeMenuLst(in_packet.chaddr, params, TFTPROOT, function(err) {
+        if (err) {
+          slog(key + "Error writing menu.lst. Not sending reply");
+          return;
+        }
+
+        packet_opts['yiaddr'] = params.ip;
+        packet_opts.options['1'] = params.netmask;
+
+        out_packet = dhcp.DHCPPacket.build_reply(in_packet, packet_opts);
+        var out = out_packet.raw();
+        res = sock.send(out, 0, out.length, 68, '255.255.255.255', function (err, bytes) {
+            if (err) throw err;
+            slog(key + "Wrote " + bytes + " bytes to socket.");
+        });
+
+        out_packet.dump(function (msg) {
+            slog(key + msg);
+        });
+
       });
-
-      out_packet.dump(function (msg) {
-          slog(key + msg);
-      });
-
     });
-
 });
 
 sock.on('listening', function() {
