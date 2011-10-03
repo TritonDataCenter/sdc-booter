@@ -26,6 +26,7 @@ DHCP_FILES = \
 	lib/pack.js \
 	lib/sprintf.js \
 	lib/mapi.js \
+	lib/menulst.js \
 	node_modules/resttp.js \
 	node_modules/request/package.json \
 	node_modules/request/main.js
