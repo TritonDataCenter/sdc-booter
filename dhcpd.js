@@ -94,6 +94,9 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
 
         packet_opts['yiaddr'] = params.ip;
         packet_opts.options['1'] = params.netmask;
+        if (params.resolvers && params.resolvers.length) {
+          packet_opts.options['6'] = params.resolvers;
+        }
 
         out_packet = dhcp.DHCPPacket.build_reply(in_packet, packet_opts);
         var out = out_packet.raw();
