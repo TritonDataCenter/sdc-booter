@@ -11,7 +11,7 @@ var dgram = require('dgram'),
        fs = require('fs'),
      dhcp = require('./lib/dhcp'),
   menulst = require('./lib/menulst'),
-     Mapi = require('./lib/mapi').Mapi,
+     MAPI = require('sdc-clients').MAPI,
   sprintf = require('./lib/sprintf'),
    config = require('./config').config;
 
@@ -25,8 +25,42 @@ var NETMASK     = config.netmask;
 
 var sessions = {};
 var sock = null;
-var mapi = new Mapi();
+var mapi = new MAPI({
+	url: config.mapiUrl,
+	username: config.user,
+	password: config.password
+});
 
+function lookupBootParams(mac_address, ip_address, callback) {
+	mapi.getBootParams(mac_address, ip_address, function(err, params) {
+		if (!err) {
+			callback(params);
+			return;
+		}
+		switch (err.httpCode) {
+		case 404:
+			var opts = { nic_tag_names: 'admin' };
+			mapi.createNic(mac_address, opts, function(err) {
+				if (!err) {
+					mapi.getBootParams(mac_address, ip_address,
+						function(err, params) {
+							callback(params);
+						});
+					return;
+				}
+				slog(key + "MAPI error " + err.httpCode + " on createNic for " +
+					mac_address);
+				callback(null);
+			});
+			break;
+		default:
+			slog(key + "MAPI error " + err.httpCode + " on lookup for " +
+				mac_address);
+			callback(null); 
+			break;
+		}
+	});
+}
 
 function build_packet_opts(key, msg_type) {
     var response_type = msg_type == 'DHCPDISCOVER' ? 'DHCPOFFER' : 'DHCPACK';
@@ -80,12 +114,12 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
             break;
     }
 
-    mapi.getBootParams(in_packet.chaddr, peer.address, function(params) {
+    lookupBootParams(in_packet.chaddr, peer.address, function(params) {
       if (params == null) {
-        slog(key + "No config returned from MAPI. Not sending reply");
+	slog(key + "No config returned from MAPI. Not sending reply");
         return;
       }
-
+	
       menulst.writeMenuLst(in_packet.chaddr, params, TFTPROOT, function(err) {
         if (err) {
           slog(key + "Error writing menu.lst. Not sending reply");
