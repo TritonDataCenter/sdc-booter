@@ -142,7 +142,7 @@ DHCP_FILES = \
 	node_modules/sdc-clients/node_modules/restify/node_modules/mime/types/mime.types \
 	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/package.json \
 	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/dtrace-provider.js \
-	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/default/DTraceProviderBindings.node \
+	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/Release/DTraceProviderBindings.node \
 	node_modules/sdc-clients/node_modules/ldapjs/lib/attribute.js \
 	node_modules/sdc-clients/node_modules/ldapjs/lib/url.js \
 	node_modules/sdc-clients/node_modules/ldapjs/lib/messages/bind_request.js \
@@ -210,9 +210,9 @@ DHCP_FILES = \
 	node_modules/sdc-clients/node_modules/ldapjs/bin/ldapjs-delete \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/package.json \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/buffertools.js \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/build/default/buffertools.node \
+	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/build/Release/buffertools.node \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/test.js \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/default/DTraceProviderBindings.node \
+	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/Release/DTraceProviderBindings.node \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/dtrace-provider.js \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/dtp.js \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/package.json \
@@ -266,6 +266,9 @@ buffertools:
 
 install-vmdhcpd: ensure-destdir-set pcap common-install-dirs vmdhcpd-install-dirs $(VMDHCP_FILES:%=$(DESTDIR)/%)
 install-dhcpd: ensure-destdir-set dtrace-provider buffertools common-install-dirs dhcpd-install-dirs $(DHCP_FILES:%=$(DESTDIR)/%)
+	(cd $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/ && ln -s build/Release/buffertools.node .)
+	(cd $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/ && ln -s build/Release/DTraceProviderBindings.node .)
+	(cd $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/ && ln -s build/Release/DTraceProviderBindings.node .)
 
 ensure-destdir-set:
 	@if [ -z "$(DESTDIR)" ]; then echo "Must set DESTDIR to install!"; false; fi
@@ -289,7 +292,9 @@ dhcpd-install-dirs:
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/lib/messages
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/lib/schema
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/asn1/lib/ber
+	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/build/Release
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/build/default
+	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/Release
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/default/solaris-i386
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/nopt/bin
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/nopt/lib
@@ -306,6 +311,7 @@ dhcpd-install-dirs:
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/bunyan/tmp/log4js-node/lib/appenders
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/bunyan/tools
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/default/solaris-i386
+	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/Release
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/http-signature/lib
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/http-signature/node_modules/asn1/lib/ber
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/http-signature/node_modules/ctype
