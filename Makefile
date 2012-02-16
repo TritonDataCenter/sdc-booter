@@ -142,9 +142,6 @@ DHCP_FILES = \
 	node_modules/sdc-clients/node_modules/restify/node_modules/mime/types/mime.types \
 	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/package.json \
 	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/dtrace-provider.js \
-	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/default/solaris-i386/dtrace_probe_1.o \
-	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/default/dtrace_provider_1.o \
-	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/default/dtrace_dof_1.o \
 	node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/build/default/DTraceProviderBindings.node \
 	node_modules/sdc-clients/node_modules/ldapjs/lib/attribute.js \
 	node_modules/sdc-clients/node_modules/ldapjs/lib/url.js \
@@ -212,15 +209,9 @@ DHCP_FILES = \
 	node_modules/sdc-clients/node_modules/ldapjs/bin/ldapjs-search \
 	node_modules/sdc-clients/node_modules/ldapjs/bin/ldapjs-delete \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/package.json \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/buffertools.node \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/buffertools.js \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/build/default/buffertools_1.o \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/build/default/buffertools.node \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/test.js \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/.mailmap \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/default/dtrace_provider_1.o \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/default/dtrace_dof_1.o \
-	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/default/solaris-i386/dtrace_probe_1.o \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/build/default/DTraceProviderBindings.node \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/dtrace-provider.js \
 	node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/dtp.js \
