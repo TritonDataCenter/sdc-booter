@@ -6,19 +6,6 @@ NAME=dhcpd
 ROOT=$(PWD)
 INSTALL=install
 
-VMDHCP_FILES = \
-	lib/action.js \
-	lib/dhcp.js \
-	lib/pack.js \
-	lib/sprintf.js \
-	bin/vmdhcp \
-	bin/vmdhcpd \
-	lib/vmdhcpd.js \
-	node_modules/pcap/pcap.js \
-	node_modules/pcap/package.json \
-	node_modules/pcap/build/default/pcap_binding.node \
-	node_modules/pcap/build/default/pcap_binding_1.o
-
 DHCP_FILES = \
 	dhcpd.js \
 	bin/bootparams \
@@ -249,13 +236,10 @@ ASSETS_PUBLISH_VERSION := $(shell git symbolic-ref HEAD | \
 
 RELEASE_TARBALL=dhcpd-pkg-$(ASSETS_PUBLISH_VERSION).tar.bz2
 
-all: pcap dtrace-provider buffertools
+all: dtrace-provider buffertools
 
 update:
 	git pull --rebase
-
-pcap:
-	(cd node_modules/pcap && node-waf configure clean build)
 
 dtrace-provider:
 	(cd node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider && node-waf configure clean build)
@@ -264,8 +248,7 @@ dtrace-provider:
 buffertools:
 	(cd node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools && node-waf configure clean build)
 
-install-vmdhcpd: ensure-destdir-set pcap common-install-dirs vmdhcpd-install-dirs $(VMDHCP_FILES:%=$(DESTDIR)/%)
-install-dhcpd: ensure-destdir-set dtrace-provider buffertools common-install-dirs dhcpd-install-dirs $(DHCP_FILES:%=$(DESTDIR)/%)
+install: ensure-destdir-set dtrace-provider buffertools install-dirs $(DHCP_FILES:%=$(DESTDIR)/%)
 	(cd $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools/ && ln -s build/Release/buffertools.node .)
 	(cd $(DESTDIR)/node_modules/sdc-clients/node_modules/ldapjs/node_modules/dtrace-provider/ && ln -s build/Release/DTraceProviderBindings.node .)
 	(cd $(DESTDIR)/node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider/ && ln -s build/Release/DTraceProviderBindings.node .)
@@ -273,14 +256,9 @@ install-dhcpd: ensure-destdir-set dtrace-provider buffertools common-install-dir
 ensure-destdir-set:
 	@if [ -z "$(DESTDIR)" ]; then echo "Must set DESTDIR to install!"; false; fi
 
-common-install-dirs:
+install-dirs:
 	mkdir -m 0755 -p $(DESTDIR)/bin
 	mkdir -m 0755 -p $(DESTDIR)/lib
-
-vmdhcpd-install-dirs:
-	mkdir -m 0755 -p $(DESTDIR)/node_modules/pcap/build/default
-
-dhcpd-install-dirs:
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/lib
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/http-signature/lib
 	mkdir -m 0755 -p $(DESTDIR)/node_modules/sdc-clients/node_modules/http-signature/node_modules/asn1/lib/ber
@@ -327,7 +305,6 @@ test:
 	node_modules/nodeunit/bin/nodeunit test
 
 clean:
-	(cd node_modules/pcap && node-waf configure clean && rm -rf build)
 	rm -fr dhcpd-*.tar.bz2
 	(cd node_modules/sdc-clients/node_modules/ldapjs/node_modules/buffertools && node-waf configure clean && rm -rf build .lock-wscript)
 	(cd node_modules/sdc-clients/node_modules/restify/node_modules/dtrace-provider && node-waf configure clean && rm -rf build .lock-wscript)

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-source /opt/smartdc/config/node.config
-export dhcp_lease_time
-exec $(dirname $0)/../lib/vmdhcpd.js
