@@ -5,6 +5,7 @@
 NAME=dhcpd
 ROOT=$(PWD)
 INSTALL=install
+TAP := ./node_modules/.bin/tap
 
 DHCP_FILES = \
 	dhcpd.js \
@@ -302,7 +303,7 @@ $(DESTDIR)/%: %
 	$(INSTALL) $(ROOT)/$^ $@
 
 test:
-	node_modules/nodeunit/bin/nodeunit test
+	TAP=1 $(TAP) test/*.js
 
 clean:
 	rm -fr dhcpd-*.tar.bz2

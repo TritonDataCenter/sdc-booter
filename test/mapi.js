@@ -1,206 +1,114 @@
-var sys      = require('sys'),
-    testCase = require('nodeunit').testCase,
-    client   = require('../lib/mapi').Mapi;
+var sys = require('sys');
+var test = require('tap').test;
+var mapi = require('../lib/mapi');
+
+mapi.setQuiet(1);
+
+//--- mock MAPI
 
 function mockMAPI() {
   this.returns = {
-    'GET': [],
-    'POST': []
+    'getBootParams': [],
+    'createNic': []
   };
   this.calls = {
-    'GET': [],
-    'POST': []
+    'getBootParams': [],
+    'createNic': []
   };
 }
 
-mockMAPI.prototype.GET = function(args, cb) {
-  var toReturn = this.returns['GET'].shift();
-  this.calls['GET'].push(args);
+
+mockMAPI.prototype.getBootParams = function(mac, ip, cb) {
+  this.calls.getBootParams.push([mac, ip]);
+
+  var toReturn = this.returns.getBootParams.shift();
   if (!toReturn) {
-    throw(new Error("mockMAPI.GET: nothing to return"));
+    throw(new Error("mockMAPI.getBootParams: nothing to return"));
   }
-  //console.log("fake GET " + sys.inspect(toReturn));
   cb.apply(this, toReturn);
 }
 
-mockMAPI.prototype.POST = function(args, cb) {
-  var toReturn = this.returns['POST'].shift();
-  this.calls['POST'].push(args);
+
+mockMAPI.prototype.createNic = function(mac, opts, cb) {
+  this.calls.createNic.push([mac, opts]);
+
+  var toReturn = this.returns.createNic.shift();
   if (!toReturn) {
-    throw(new Error("mockMAPI.POST: nothing to return"));
+    throw(new Error("mockMAPI.createNic: nothing to return"));
   }
-  //console.log("fake POST " + sys.inspect(toReturn));
   cb.apply(this, toReturn);
 }
+
+
+
+//--- tests
 
 
 var mac = '90:b8:d0:53:3e:42';
 var ip = '0.0.0.0';
-var html = '<html>an html string</html>';
 var json = '{ "one": "two" }';
-var getParams = { pathname: 'admin/boot/' + mac };
-var postParams = { pathname: 'admin/nics',
-                   params: { address: mac, nic_tag_names: 'admin' } };
+var opts = { nic_tag_names: 'admin' };
 
-exports['getBootParams'] = testCase({
-  setUp: function(done) {
-    this.mapi = new client();
-    this.mapi.logging = false;
-    this.fakeClient = new mockMAPI();
-    this.mapi.client = this.fakeClient;
-    done();
-  },
 
-  'fetches boot parameters on first GET': function(test) {
-    var self = this;
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 200, json],
-    ];
+test('fetches boot parameters', function(t) {
+  var mock = new mockMAPI();
+  mock.returns.getBootParams = [
+    [null, json],
+  ];
 
-    this.mapi.getBootParams(mac, ip, function(ret) {
-      test.deepEqual(ret, JSON.parse(json));
-      test.deepEqual(self.mapi.client.calls['GET'], [ getParams ]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ ]);
-      test.done();
-    });
-  },
-
-  'fetches boot parameters on second GET': function(test) {
-    var self = this;
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 404, json],
-      [ 200, html],
-    ];
-    this.mapi.client.returns['POST'] = [
-      [ 201, null],
-    ];
-
-    this.mapi.getBootParams(mac, ip, function(ret) {
-      test.equal(ret, null);
-      test.deepEqual(self.mapi.client.calls['GET'], [ getParams, getParams ]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
-      test.done();
-    });
-  },
-
-  'returns null for invalid JSON on first GET': function(test) {
-    var self = this;
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 200, html],
-    ];
-
-    this.mapi.getBootParams(mac, ip, function(ret) {
-      test.equal(ret, null);
-      test.deepEqual(self.mapi.client.calls['GET'], [ getParams]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ ]);
-      test.done();
-    });
-  },
-
-  'returns null for invalid JSON on POST': function(test) {
-    var self = this;
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 404, json],
-    ];
-    this.mapi.client.returns['POST'] = [
-      [ 404, html],
-    ];
-
-    this.mapi.getBootParams(mac, ip, function(ret) {
-      test.equal(ret, null);
-      test.deepEqual(self.mapi.client.calls['GET'], [ getParams]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
-      test.done();
-    });
-  },
-
-  'returns null for invalid JSON on second GET': function(test) {
-    var self = this;
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 404, json],
-      [ 200, html],
-    ];
-    this.mapi.client.returns['POST'] = [
-      [ 201, null],
-    ];
-
-    this.mapi.getBootParams(mac, ip, function(ret) {
-      test.equal(ret, null);
-      test.deepEqual(self.mapi.client.calls['GET'], [ getParams, getParams ]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
-      test.done();
-    });
-  },
-
-  'does not do a POST if first GET fails with non-404': function(test) {
-    var self = this;
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 409, json],
-    ];
-    this.mapi.client.returns['POST'] = [
-      [ 201, null],
-    ];
-
-    this.mapi.getBootParams(mac, ip, function(ret) {
-      test.equal(ret, null);
-      test.deepEqual(self.mapi.client.calls['GET'], [ getParams ]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ ]);
-      test.done();
-    });
-  },
-
-  'requests former IP on first GET': function(test) {
-    var self = this;
-    var newIp = '1.2.3.4';
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 200, json],
-    ];
-
-    var args = {};
-    for (var a in getParams) {
-      args[a] = getParams[a];
-    }
-    args['ip'] = newIp;
-
-    this.mapi.getBootParams(mac, newIp, function(ret) {
-      test.deepEqual(ret, JSON.parse(json));
-      test.deepEqual(self.mapi.client.calls['GET'], [ args ]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ ]);
-      test.done();
-    });
-  },
-
-  'requests former IP on second GET': function(test) {
-    var self = this;
-    var newIp = '1.2.3.4';
-    test.expect(3);
-    this.mapi.client.returns['GET'] = [
-      [ 404, json],
-      [ 200, html],
-    ];
-    this.mapi.client.returns['POST'] = [
-      [ 201, null],
-    ];
-    var args = {};
-    for (var a in getParams) {
-      args[a] = getParams[a];
-    }
-    args['ip'] = newIp;
-
-    this.mapi.getBootParams(mac, newIp, function(ret) {
-      test.equal(ret, null);
-      test.deepEqual(self.mapi.client.calls['GET'], [ args, args ]);
-      test.deepEqual(self.mapi.client.calls['POST'], [ postParams ]);
-      test.done();
-    });
-  },
-
+  mapi.lookupBootParams(mock, '', mac, ip, function(ret) {
+    t.deepEqual(ret, json);
+    t.deepEqual(mock.calls.getBootParams, [ [ mac, ip ] ]);
+    t.end();
+  });
 });
 
+
+test("fetches boot parameters if nic doesn't exist", function(t) {
+  var mock = new mockMAPI();
+  mock.returns.getBootParams = [
+    [{'httpCode': 404}, null],
+    [null, json]
+  ];
+  mock.returns.createNic = [
+    [null, null]
+  ];
+
+  mapi.lookupBootParams(mock, '', mac, ip, function(ret) {
+    t.equal(ret, json);
+    t.deepEqual(mock.calls.getBootParams, [[mac, ip], [mac, ip]]);
+    t.deepEqual(mock.calls.createNic, [[mac, opts]]);
+    t.end();
+  });
+});
+
+test("doesn't do a createNic if first getBootParams fails with non-404", function(t) {
+  var mock = new mockMAPI();
+  mock.returns.getBootParams = [
+    [{'httpCode': 500}, null],
+  ];
+
+  mapi.lookupBootParams(mock, '', mac, ip, function(ret) {
+    t.equal(ret, null);
+    t.deepEqual(mock.calls.getBootParams, [[mac, ip]]);
+    t.deepEqual(mock.calls.createNic, []);
+    t.end();
+  });
+});
+
+test("doesn't do a second getBootParams if createNic fails", function(t) {
+  var mock = new mockMAPI();
+  mock.returns.getBootParams = [
+    [{'httpCode': 404}, null],
+  ];
+  mock.returns.createNic = [
+    [{'httpCode': 500}, null],
+  ];
+
+  mapi.lookupBootParams(mock, '', mac, ip, function(ret) {
+    t.equal(ret, null);
+    t.deepEqual(mock.calls.getBootParams, [[mac, ip]]);
+    t.deepEqual(mock.calls.createNic, [[mac, opts]]);
+    t.end();
+  });
+});
