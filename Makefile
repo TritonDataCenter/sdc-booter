@@ -75,7 +75,7 @@ deps/node-sdc-clients/.git:
 # Packaging targets
 #
 .PHONY: pkg
-pkg:
+pkg: all
 	rm -rf $(PKG_DIR)
 	mkdir -p $(BOOTER_PKG_DIR)/smf/manifests
 	mkdir -p $(TFTPBOOT_PKG_DIR)
