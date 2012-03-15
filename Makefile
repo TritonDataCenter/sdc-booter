@@ -14,8 +14,6 @@ TOP := $(shell pwd)
 # Tools
 #
 TAP		:= ./node_modules/.bin/tap
-#NPM_FLAGS = --tar=$(TAR) --cache=$(BUILD)/tmp/npm-cache
-#NPM_FLAGS = --cache=$(BUILD)/tmp/npm-cache
 NPM_FLAGS = --cache=$(TOP)/build/tmp/npm-cache
 
 include ./tools/mk/Makefile.defs
@@ -58,7 +56,7 @@ $(TAP): | $(NPM_EXEC)
 
 .PHONY: test
 test: $(TAP)
-	TAP=1 $(TAP) test/*.test.js
+	TAP=1 $(TAP) test/*.js
 
 
 #
