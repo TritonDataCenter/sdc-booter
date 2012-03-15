@@ -1,1 +1,5 @@
 /dhcpd-pkg-*.tar.bz2
+/node_modules
+/deps/node-install
+/smf/manifests/*.xml
+/build

@@ -1,0 +1,19 @@
+{
+  "name": "booter",
+  "description": "dhcp server for booting SDC compute nodes",
+  "version": "1.0.0",
+  "author": "Joyent (joyent.com)",
+  "private": true,
+  "devDependencies": {
+    "tap": "0.2"
+  },
+  "bundledDependences": [
+    "sdc-clients"
+  ],
+  "scripts": {
+    "test": "make test"
+  },
+  "engines": {
+    "node": ">=0.6"
+  }
+}
