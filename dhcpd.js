@@ -59,6 +59,7 @@ function build_packet_opts(key, msg_type) {
 sock = dgram.createSocket("udp4", function (msg, peer) {
     var in_packet = dhcp.DHCPPacket.parse(msg);
     var key = "[" + in_packet.chaddr + "] ";
+    var user_class;
     slog(key + "src_address=" + peer.address + ":" + peer.port);
 
     // Print the whole packet in hex
@@ -78,6 +79,17 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
         case 'DHCPDISCOVER':
         case 'DHCPREQUEST':
             packet_opts = build_packet_opts(key, msg_type);
+            if (in_packet.options[77]) {
+                user_class = new Buffer(in_packet.options[77]).toString();
+                if (user_class === 'gPXE') {
+                    packet_opts.file = 'boot.gpxe.01' +
+                      in_packet.chaddr.split(':').join('').toUpperCase();
+                    slog('Detected gPXE, setting file to "' +
+                      packet_opts.file + '"');
+                } else {
+                    slog('Unknown user-class: "' + user_class + '", ignoring');
+                }
+            }
             break;
         default:
             slog(key + "< " + msg_type + ": not responding");
@@ -87,10 +99,10 @@ sock = dgram.createSocket("udp4", function (msg, peer) {
 
     lookupBootParams(mapi, key, in_packet.chaddr, peer.address, function(params) {
       if (params == null) {
-	slog(key + "No config returned from MAPI. Not sending reply");
+        slog(key + "No config returned from MAPI. Not sending reply");
         return;
       }
-	
+
       menulst.writeMenuLst(in_packet.chaddr, params, TFTPROOT, function(err) {
         if (err) {
           slog(key + "Error writing menu.lst. Not sending reply");
