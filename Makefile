@@ -82,7 +82,7 @@ pkg: all
 	cp $(TOP)/tftpboot/* $(TFTPBOOT_PKG_DIR)
 	cp -PR lib \
 		bin \
-		dhcpd.js \
+		server.js \
 		package.json \
 		$(BOOTER_PKG_DIR)
 	cp -P smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests

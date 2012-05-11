@@ -7,4 +7,4 @@ if [[ ! -d "${NODE_INSTALL}" && -d "${TOP}/build/node" ]]; then
     NODE_INSTALL=${TOP}/build/node
 fi
 
-${NODE_INSTALL}/bin/node ${TOP}/server.js "$@"
+${NODE_INSTALL}/bin/node ${TOP}/lib/booter.js "$@"

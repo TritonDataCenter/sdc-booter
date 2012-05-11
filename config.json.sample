@@ -1,0 +1,19 @@
+{
+  "napi": {
+    "url": "http://10.99.99.13:8080",
+    "username": "admin",
+    "password": "joypass123"
+  },
+  "cnapi": {
+    "url": "http://10.99.99.28",
+    "username": "admin",
+    "password": "joypass123"
+  },
+  "listenIp": "0.0.0.0",
+  "port": 67,
+  "tftpRoot": "/tmp/tftpboot",
+  "defaultGateway": "10.99.99.7",
+  "serverIp": "10.99.99.11",
+  "leaseTime": 3600,
+  "netmask": "255.255.255.0"
+}

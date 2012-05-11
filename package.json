@@ -4,6 +4,12 @@
   "version": "1.0.0",
   "author": "Joyent (joyent.com)",
   "private": true,
+  "dependencies": {
+    "bunyan": "0.7",
+    "node-uuid": "1.2.0",
+    "restify": "1.4.1",
+    "vasync": "1.1"
+  },
   "devDependencies": {
     "tap": "0.2"
   },
