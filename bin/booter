@@ -2,9 +2,15 @@
 
 TOP=$(unset CDPATH; cd $(dirname $0)/../; pwd)
 NODE_INSTALL=${TOP}/node
+BUNYAN=${TOP}/node_modules/.bin/bunyan
+
 if [[ ! -d "${NODE_INSTALL}" && -d "${TOP}/build/node" ]]; then
     # Dev/repo layout.
     NODE_INSTALL=${TOP}/build/node
 fi
+
+[[ "$1" == "log" ]] && ${BUNYAN} $(svcs -L dhcpd) && exit 0
+[[ "$1" == "lastlog" ]] && tail -n 30 $(svcs -L dhcpd) | ${BUNYAN} && exit 0
+[[ "$1" == "tail" ]] && exec tail -f $(svcs -L dhcpd) | ${BUNYAN}
 
 ${NODE_INSTALL}/bin/node ${TOP}/lib/booter.js "$@"
