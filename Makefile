@@ -16,10 +16,6 @@ TOP := $(shell pwd)
 NODEUNIT	:= ./node_modules/.bin/nodeunit
 NPM_FLAGS = --cache=$(TOP)/build/tmp/npm-cache
 
-include ./tools/mk/Makefile.defs
-include ./tools/mk/Makefile.node.defs
-include ./tools/mk/Makefile.smf.defs
-
 
 #
 # Files
@@ -35,12 +31,16 @@ TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
 RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.bz2
 CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
 
+NODE_PREBUILT_VERSION=v0.8.14
+NODE_PREBUILT_TAG=zone
+
 
 #
 # Included definitions
 #
 include ./tools/mk/Makefile.defs
-include ./tools/mk/Makefile.node.defs
+include ./tools/mk/Makefile.node_prebuilt.defs
+include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
 
 
@@ -48,27 +48,15 @@ include ./tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 .PHONY: all
-all: deps $(SMF_MANIFESTS) | $(TAP)
+all: $(SMF_MANIFESTS) | $(NODEUNIT)
 	$(NPM) rebuild
 
-$(NODEUNIT):
+$(NODEUNIT): | $(NPM_EXEC)
 	$(NPM) install
 
 .PHONY: test
 test: | $(NODEUNIT)
 	$(NODEUNIT) test/*.test.js
-
-
-#
-# Dependencies
-#
-.PHONY: deps
-deps: | $(NPM_EXEC) deps/node-sdc-clients/.git
-	$(NPM) install deps/node-sdc-clients
-	$(NPM) install
-
-deps/node-sdc-clients/.git:
-	GIT_SSL_NO_VERIFY=1 git submodule update --init deps/node-sdc-clients
 
 
 #
@@ -86,7 +74,7 @@ pkg: all
 		package.json \
 		$(BOOTER_PKG_DIR)
 	cp -P smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
-	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production && $(NPM) install --production $(TOP)/deps/node-sdc-clients)
+	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
 	# Clean up some dev / build bits
@@ -115,6 +103,7 @@ publish:
 # Includes
 #
 include ./tools/mk/Makefile.deps
-include ./tools/mk/Makefile.node.targ
+include ./tools/mk/Makefile.node_prebuilt.targ
+include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.targ

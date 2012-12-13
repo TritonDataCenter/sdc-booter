@@ -5,19 +5,17 @@
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
-    "bunyan": "0.7",
+    "bunyan": "0.16.7",
     "node-uuid": "1.2.0",
     "restify": "1.4.1",
-    "vasync": "1.1"
+    "sdc-clients": "git+ssh://git@git.joyent.com:node-sdc-clients.git#49afb7e",
+    "vasync": "1.3.2"
   },
   "devDependencies": {
     "clone": "0.1.4",
     "mockery": "1.2.0",
     "nodeunit": "0.7.4"
   },
-  "bundledDependences": [
-    "sdc-clients"
-  ],
   "scripts": {
     "test": "make test"
   },

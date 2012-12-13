@@ -28,12 +28,11 @@ headnode.
                     tarred up
     deps/           git submodules get cloned here
     lib/            source files
-    node_modules/   Node.js deps, installed from npm or deps/ (in the case of
-                    node-sdc-clients)
+    node_modules/   Node.js deps, installed from npm
     smf/manifests   SMF manifests
-    test/           node-tap test suite (run with 'make test')
+    test/           nodeunit test suite (run with 'make test')
     tools/          miscellaneous dev/upgrade/deployment tools and data.
-    dhcpd.js        the main entry point for the server
+    server.js       the main entry point for the server
 
 
 # Development
@@ -56,5 +55,3 @@ usb-headnode README.
 Remaining work for this repo:
 
 * jsstyling and linting
-* Log using bunyan
-* Add validation of config on start
