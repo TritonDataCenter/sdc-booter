@@ -11,7 +11,9 @@
     "vasync": "1.1"
   },
   "devDependencies": {
-    "tap": "0.2"
+    "clone": "0.1.4",
+    "mockery": "1.2.0",
+    "nodeunit": "0.7.4"
   },
   "bundledDependences": [
     "sdc-clients"

@@ -13,7 +13,7 @@ TOP := $(shell pwd)
 #
 # Tools
 #
-TAP		:= ./node_modules/.bin/tap
+NODEUNIT	:= ./node_modules/.bin/nodeunit
 NPM_FLAGS = --cache=$(TOP)/build/tmp/npm-cache
 
 include ./tools/mk/Makefile.defs
@@ -51,12 +51,12 @@ include ./tools/mk/Makefile.smf.defs
 all: deps $(SMF_MANIFESTS) | $(TAP)
 	$(NPM) rebuild
 
-$(TAP): | $(NPM_EXEC)
+$(NODEUNIT):
 	$(NPM) install
 
 .PHONY: test
-test: $(TAP)
-	TAP=1 $(TAP) test/*.js
+test: | $(NODEUNIT)
+	$(NODEUNIT) test/*.test.js
 
 
 #
