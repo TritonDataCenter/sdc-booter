@@ -89,7 +89,7 @@ var MOCKS_REGISTERED = false;
 
 function error404() {
   var err = new Error('404');
-  err.httpCode = 404;
+  err.statusCode = 404;
   return err;
 }
 
