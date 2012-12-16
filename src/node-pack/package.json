@@ -1,0 +1,18 @@
+{
+  "name": "pack",
+  "description": "pack and unpack",
+  "version": "0.0.1",
+  "author": {
+    "name": "Tim de Koning",
+    "url": "http://www.kingsquare.nl"
+  },
+  "main": "./index",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sidorares/nodejs-mysql-native.git"
+  },
+  "license": "MIT/X11",
+  "engines": {
+    "node": "*"
+  }
+}

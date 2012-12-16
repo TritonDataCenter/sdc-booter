@@ -22,42 +22,42 @@ var runOne;
 
 var CN1_NICS = [
   {
-    "belongs_to_type": "server",
-    "belongs_to_uuid": "564d5535-52f0-f2ac-72e5-bca4d1d45bfa",
-    "mac": "00:0c:29:d4:5b:04",
-    "owner_uuid": "00000000-0000-0000-0000-000000000000",
-    "primary": false,
-    "ip": "10.88.88.134",
-    "netmask": "255.255.255.0",
-    "gateway": "10.88.88.2",
-    "vlan_id": 0,
-    "nic_tag": "external",
-    "resolvers": [
-      "8.8.8.8",
-      "8.8.4.4"
+    belongs_to_type: 'server',
+    belongs_to_uuid: '564d5535-52f0-f2ac-72e5-bca4d1d45bfa',
+    mac: '00:0c:29:d4:5b:04',
+    owner_uuid: '00000000-0000-0000-0000-000000000000',
+    primary: false,
+    ip: '10.88.88.134',
+    netmask: '255.255.255.0',
+    gateway: '10.88.88.2',
+    vlan_id: 0,
+    nic_tag: 'external',
+    resolvers: [
+      '8.8.8.8',
+      '8.8.4.4'
     ],
-    "network_uuid": "09e94670-08f5-4c06-883b-bc43b24862ef",
-    "nic_tags_provided": [
-      "external"
+    network_uuid: '09e94670-08f5-4c06-883b-bc43b24862ef',
+    nic_tags_provided: [
+      'external'
     ]
   },
   {
-    "belongs_to_type": "server",
-    "belongs_to_uuid": "564d5535-52f0-f2ac-72e5-bca4d1d45bfa",
-    "mac": "00:0c:29:d4:5b:fa",
-    "owner_uuid": "00000000-0000-0000-0000-000000000000",
-    "primary": false,
-    "ip": "10.99.99.78",
-    "netmask": "255.255.255.0",
-    "vlan_id": 0,
-    "nic_tag": "admin",
-    "resolvers": [
-      "8.8.8.8",
-      "8.8.4.4"
+    belongs_to_type: 'server',
+    belongs_to_uuid: '564d5535-52f0-f2ac-72e5-bca4d1d45bfa',
+    mac: '00:0c:29:d4:5b:fa',
+    owner_uuid: '00000000-0000-0000-0000-000000000000',
+    primary: false,
+    ip: '10.99.99.78',
+    netmask: '255.255.255.0',
+    vlan_id: 0,
+    nic_tag: 'admin',
+    resolvers: [
+      '8.8.8.8',
+      '8.8.4.4'
     ],
-    "network_uuid": "e491b841-4fc3-4502-bf95-2935f4c2f42a",
-    "nic_tags_provided": [
-      "admin"
+    network_uuid: 'e491b841-4fc3-4502-bf95-2935f4c2f42a',
+    nic_tags_provided: [
+      'admin'
     ]
   }
 ];

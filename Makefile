@@ -30,16 +30,25 @@ BOOTER_PKG_DIR = $(PKG_DIR)/root/opt/smartdc/booter
 TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
 RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.bz2
 CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
+REPO_MODULES := src/node-pack
+JSSTYLE_FLAGS = -o indent=2,doxygen,unparenthesized-return=0
 
-NODE_PREBUILT_VERSION=v0.8.14
-NODE_PREBUILT_TAG=zone
+ifeq ($(shell uname -s),SunOS)
+	NODE_PREBUILT_VERSION=v0.8.14
+	NODE_PREBUILT_TAG=zone
+endif
 
 
 #
 # Included definitions
 #
 include ./tools/mk/Makefile.defs
-include ./tools/mk/Makefile.node_prebuilt.defs
+ifeq ($(shell uname -s),SunOS)
+	include ./tools/mk/Makefile.node_prebuilt.defs
+else
+	NPM_EXEC :=
+	NPM = npm
+endif
 include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
 
@@ -48,7 +57,7 @@ include ./tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT)
+all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT)
 	$(NPM) rebuild
 
 $(NODEUNIT): | $(NPM_EXEC)
@@ -57,7 +66,6 @@ $(NODEUNIT): | $(NPM_EXEC)
 .PHONY: test
 test: | $(NODEUNIT)
 	$(NODEUNIT) test/*.test.js
-
 
 #
 # Packaging targets
@@ -103,7 +111,9 @@ publish:
 # Includes
 #
 include ./tools/mk/Makefile.deps
-include ./tools/mk/Makefile.node_prebuilt.targ
+ifeq ($(shell uname -s),SunOS)
+	include ./tools/mk/Makefile.node_prebuilt.targ
+endif
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.targ

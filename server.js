@@ -14,16 +14,16 @@ var log = bunyan.createLogger({
     level: 'debug',
     serializers: {
         err: bunyan.stdSerializers.err,
-        req: bunyan.stdSerializers.req,
+        req: bunyan.stdSerializers.req
     }
 });
 
 try {
-  var dhcpd = dhcpd.createServer({
+  var server = dhcpd.createServer({
     log: log,
     configFile: __dirname + '/config.json'
   });
-  dhcpd.start();
+  server.start();
 } catch (err) {
   log.error(err);
   process.exit(1);

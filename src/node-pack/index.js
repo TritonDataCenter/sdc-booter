@@ -27,6 +27,7 @@ exports.unpack = function(format, data) {
     var instruction, quantifier, currentData, i, j, k;
 
     while(format) {
+        var currentResult;
         instruction = format.substring(0,1);
         format = format.slice(1);
         quantifier = '1';
@@ -230,6 +231,7 @@ exports.pack = function(format) {
         case 'a': //NUL-padded string
         case 'A': //SPACE-padded string
         case 'Z':
+            var argument;
             if (typeof args[argumentPointer] === 'undefined') {
                 throw new Error('Warning: pack() Type ' + instruction +
                        ': not enough arguments');
@@ -239,7 +241,7 @@ exports.pack = function(format) {
             if (quantifier === '*') {
                 quantifier = argument.length + ((instruction === 'a') ? 1 : 0);
             }
-            for (i = 0; i < quantifier; i ++) {
+            for (var i = 0; i < quantifier; i ++) {
                 if (typeof(argument[i]) === 'undefined') {
                     if (instruction === 'a') {
                         result += String.fromCharCode(0);
@@ -420,7 +422,7 @@ var encodeIEEE754 = function(val, type) {
     bfrac = bfrac.substring(bfrac.indexOf("1")+1);
     var bits = (val<0?"1":"0")+zeropadding(exp.toString(2), config.exp, true)+bfrac;
 
-    result = [];
+    var result = [];
     for (var i = 0; i < config.bytes; i++) {
         result.push(String.fromCharCode(parseInt(zeropadding(bits.substring(i*8,i*8+8),8,false),2)));
     }
@@ -460,7 +462,7 @@ var decodeIEEE754 = function(data) {
         throw "Range error";
     }
 
-    s = bits[0] & 0x80;
+    var s = bits[0] & 0x80;
     for (var i = 2; i < n; i++) {
         m = m * 0x100 + bits[i];
     }
