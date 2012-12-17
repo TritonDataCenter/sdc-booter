@@ -83,6 +83,7 @@ pkg: all
 		$(BOOTER_PKG_DIR)
 	cp -P smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
 	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
+	cp -PR src/node-pack $(BOOTER_PKG_DIR)/node_modules/pack
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
 	# Clean up some dev / build bits
