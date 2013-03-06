@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  *
  * mocks for tests
  */
@@ -12,6 +12,7 @@
 
 
 var LOG = false;
+var ROOT = {};
 
 
 
@@ -50,7 +51,28 @@ Mock.prototype._handle = function (name, args, cb) {
 
 
 
-// --- bunyan
+// --- Internal helpers
+
+
+/**
+ * Returns a fake fs ENOENT error
+ */
+function _ENOENT(path) {
+  var err = new Error('ENOENT: ' + path);
+  err.code = 'ENOENT';
+  return err;
+}
+
+
+/**
+ * Splits a path into directory and file
+ */
+function _splitFile(f) {
+  return {
+    dir: f.substring(0, f.lastIndexOf('/')),
+    file: f.substring(f.lastIndexOf('/') + 1)
+  };
+}
 
 
 
@@ -125,6 +147,49 @@ function createMocks() {
   // sdc-clients
 
   mocks.sdcClients = {};
+
+  // fs
+
+  ROOT = {};
+  mocks.fs = {
+    getRoot: function () {
+      return ROOT;
+    },
+
+    readFile: function (file, cb) {
+      var p = _splitFile(file);
+
+      if (!ROOT.hasOwnProperty(p.dir) ||
+        !ROOT[p.dir].hasOwnProperty(p.file)) {
+        return cb(_ENOENT(file));
+      }
+
+      return cb(null, ROOT[p.dir][p.file]);
+    },
+
+    mkdir: function (dir, cb) {
+      if (ROOT.hasOwnProperty(dir)) {
+        var err = new Error('EEXIST: ' + dir);
+        err.code = 'EEXIST';
+        return cb(err);
+      }
+
+      ROOT[dir] = {};
+      return cb();
+    },
+
+    writeFile: function (file, data, cb) {
+      var p = _splitFile(file);
+
+      if (!ROOT.hasOwnProperty(p.dir)) {
+        return cb(_ENOENT(file));
+      }
+
+      ROOT[p.dir][p.file] = data;
+      return cb();
+    }
+
+  };
 
   return mocks;
 }

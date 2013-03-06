@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  *
  * bootparams tests
  */
@@ -8,7 +8,9 @@ var bp;
 var clone = require('clone');
 var mockery = require('mockery');
 var mod_mock = require('./lib/mocks');
+var restify = require('restify');
 var util = require('util');
+var vasync = require('vasync');
 
 
 
@@ -107,11 +109,14 @@ exports.setUp = function (cb) {
 
   if (!MOCKS_REGISTERED) {
     mockery.registerMock('sdc-clients', mocks.sdcClients);
+    mockery.registerMock('fs', mocks.fs);
 
     [
       'assert',
+      'assert-plus',
       'extsprintf',
       'util',
+      'stream',
       'vasync',
       'verror',
       '../lib/bootparams'
@@ -122,6 +127,7 @@ exports.setUp = function (cb) {
     bp = require('../lib/bootparams');
     MOCKS_REGISTERED = true;
   }
+
   cb();
 };
 
@@ -155,8 +161,13 @@ exports['new CN boots'] = function (t) {
     getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
   };
 
-  bp.getBootParams(newNic.mac, mocks.napi, mocks.cnapi, mocks.bunyan,
-    function (err, res) {
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: newNic.mac,
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
     t.ifError(err);
 
     var params = clone(DEFAULT_BOOT_PARAMS);
@@ -204,8 +215,13 @@ exports['existing CN boots'] = function (t) {
 
   var expParams = clone(bootParams);
 
-  bp.getBootParams(serverNics[1].mac, mocks.napi, mocks.cnapi, mocks.bunyan,
-    function (err, res) {
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: serverNics[1].mac,
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
     t.ifError(err);
 
     expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -244,8 +260,13 @@ exports['existing CN boots: no bootparams'] = function (t) {
 
   var expParams = clone(DEFAULT_BOOT_PARAMS);
 
-  bp.getBootParams(serverNics[1].mac, mocks.napi, mocks.cnapi, mocks.bunyan,
-    function (err, res) {
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: serverNics[1].mac,
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
     t.ifError(err);
 
     expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -280,8 +301,13 @@ exports['admin nic different than booting nic'] = function (t) {
 
   var expParams = clone(CN1_BOOT_PARAMS);
 
-  bp.getBootParams(serverNics[1].mac, mocks.napi, mocks.cnapi, mocks.bunyan,
-    function (err, res) {
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: serverNics[1].mac,
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
     t.ifError(err);
 
     // admin_nic will be set to the nic in NAPI with nic_tags_provided of
@@ -294,6 +320,290 @@ exports['admin nic different than booting nic'] = function (t) {
     t.deepEqual(res, expParams, 'boot params: admin nic != booting nic');
 
     t.done();
+  });
+};
+
+
+exports['existing CN boots: NAPI connection error'] = function (t) {
+  var serverNics = clone(CN1_NICS);
+  var bootParams = clone(CN1_BOOT_PARAMS);
+  var bootParams2 = clone(CN1_BOOT_PARAMS);
+  bootParams2.kernel_args.other_param = 'changed';
+
+  mocks.napi.VALUES = {
+    getNic: [
+      { res: serverNics[1] },
+      { err: new restify.RestError('connect ECONNREFUSED') },
+      { res: serverNics[1] },
+      { res: serverNics[1] }
+    ],
+    getNics: [
+      { res: serverNics },
+      // not called 2nd time: error from napi.getNic() prevents this
+      { res: serverNics },
+      { err: new restify.RestError('connect ECONNREFUSED') }
+    ]
+  };
+
+  mocks.cnapi.VALUES = {
+    getBootParams: [
+      { res: bootParams },
+      // not called 2nd time: error from napi.getNic() prevents this
+      { res: bootParams2 },
+      { res: bootParams2 }
+    ]
+  };
+
+  var expParams;
+
+  vasync.pipeline({
+  funcs: [
+    // First call: things go normally
+    function (_, cb) {
+      bp.getBootParams({
+        cacheDir: '/tmp/cacheDir',
+        mac: serverNics[1].mac,
+        napi: mocks.napi,
+        cnapi: mocks.cnapi,
+        log: mocks.bunyan
+      }, function (err, res) {
+        t.ifError(err);
+        expParams = res;
+
+        var root = mocks.fs.getRoot();
+        var macFile = serverNics[1].mac + '.json';
+        var cached = JSON.parse(root['/tmp/cacheDir'][macFile]);
+        t.deepEqual(cached, expParams, 'params written to cache file');
+
+        return cb();
+      });
+    },
+
+    // Second call: napi.getNic() returns an error
+    function (_, cb) {
+      bp.getBootParams({
+        cacheDir: '/tmp/cacheDir',
+        mac: serverNics[1].mac,
+        napi: mocks.napi,
+        cnapi: mocks.cnapi,
+        log: mocks.bunyan
+      }, function (err, res) {
+        t.ifError(err);
+        t.deepEqual(res, expParams, 'same params returned');
+
+        // Confirm we're erroring out where we expect:
+
+        t.equal(mocks.cnapi.CALLS.getBootParams.length, 1,
+          'CNAPI /boot called only once');
+
+        t.equal(mocks.napi.CALLS.getNics.length, 1,
+          'NAPI /nics called only once');
+
+        t.equal(mocks.napi.CALLS.getNic.length, 2,
+          'NAPI /nic/:mac called twice');
+
+        return cb();
+      });
+    },
+
+    // Third call: things go normally, and CNAPI returns updated params
+    function (_, cb) {
+      bp.getBootParams({
+        cacheDir: '/tmp/cacheDir',
+        mac: serverNics[1].mac,
+        napi: mocks.napi,
+        cnapi: mocks.cnapi,
+        log: mocks.bunyan
+      }, function (err, res) {
+        t.ifError(err);
+        expParams.kernel_args.other_param =
+          bootParams2.kernel_args.other_param;
+        t.deepEqual(res, expParams, 'params updated');
+
+        t.equal(mocks.cnapi.CALLS.getBootParams.length, 2,
+          'CNAPI /boot called once more');
+
+        t.equal(mocks.napi.CALLS.getNics.length, 2,
+          'NAPI /nics called once more');
+
+        t.equal(mocks.napi.CALLS.getNic.length, 3,
+          'NAPI /nic/:mac called once more');
+
+        var root = mocks.fs.getRoot();
+        var macFile = serverNics[1].mac + '.json';
+        var cached = JSON.parse(root['/tmp/cacheDir'][macFile]);
+        t.deepEqual(cached, expParams, 'params written to cache file');
+
+        return cb();
+      });
+    },
+
+    // Fourth call: napi.getNics() returns an error
+    function (_, cb) {
+      bp.getBootParams({
+        cacheDir: '/tmp/cacheDir',
+        mac: serverNics[1].mac,
+        napi: mocks.napi,
+        cnapi: mocks.cnapi,
+        log: mocks.bunyan
+      }, function (err, res) {
+        t.ifError(err);
+        t.deepEqual(res, expParams, 'updated params returned');
+
+        t.equal(mocks.cnapi.CALLS.getBootParams.length, 3,
+          'CNAPI /boot called once more');
+
+        t.equal(mocks.napi.CALLS.getNics.length, 3,
+          'NAPI /nics called once more');
+
+        t.equal(mocks.napi.CALLS.getNic.length, 4,
+          'NAPI /nic/:mac called once more');
+
+        return cb();
+      });
+    }
+  ] }, function () {
+    return t.done();
+  });
+};
+
+
+exports['existing CN boots: CNAPI connection error'] = function (t) {
+  var serverNics = clone(CN1_NICS);
+  var bootParams = clone(CN1_BOOT_PARAMS);
+
+  mocks.napi.VALUES = {
+    getNic: [
+      { res: serverNics[1] },
+      { res: serverNics[1] }
+    ],
+    getNics: [
+      { res: serverNics }
+    ]
+  };
+
+  mocks.cnapi.VALUES = {
+    getBootParams: [
+      { res: bootParams },
+      { err: new restify.RestError('connect ECONNREFUSED') }
+    ]
+  };
+
+  var expParams;
+
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: serverNics[1].mac,
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
+    t.ifError(err);
+    expParams = res;
+
+    bp.getBootParams({
+      cacheDir: '/tmp/cacheDir',
+      mac: serverNics[1].mac,
+      napi: mocks.napi,
+      cnapi: mocks.cnapi,
+      log: mocks.bunyan
+    }, function (err2, res2) {
+      t.ifError(err2);
+      t.deepEqual(res2, expParams, 'same params returned');
+
+      // Confirm we're erroring out where we expect:
+
+      t.equal(mocks.cnapi.CALLS.getBootParams.length, 2,
+        'CNAPI /boot called twice');
+
+      t.equal(mocks.napi.CALLS.getNics.length, 1,
+        'NAPI /nics called only once');
+
+      t.equal(mocks.napi.CALLS.getNic.length, 2,
+        'NAPI /nic/:mac called twice');
+
+      t.done();
+    });
+  });
+};
+
+
+exports['error while provisioning nic'] = function (t) {
+  mocks.napi.VALUES = {
+    getNic: [ { err: error404() } ],
+    provisionNic: [ { err: new Error('XXX bad error') } ]
+  };
+
+  mocks.cnapi.VALUES = {
+    getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
+  };
+
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: '06:b7:ad:86:be:05',
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
+    t.ok(err, 'Error returned');
+    if (!err) {
+      return t.done();
+    }
+
+    t.equal(err.message, 'XXX bad error', 'correct error returned');
+    t.done();
+  });
+};
+
+
+exports['invalid JSON in cache file'] = function (t) {
+  var bootParams = clone(CN1_BOOT_PARAMS);
+  var serverNics = clone(CN1_NICS);
+
+  mocks.napi.VALUES = {
+    getNic: [
+      { res: serverNics[1] },
+      { err: new Error('connect ECONNREFUSED') }
+    ],
+    getNics: [
+      { res: serverNics }
+    ]
+  };
+
+  mocks.cnapi.VALUES = {
+    getBootParams: [
+      { res: bootParams }
+    ]
+  };
+
+  bp.getBootParams({
+    cacheDir: '/tmp/cacheDir',
+    mac: serverNics[1].mac,
+    napi: mocks.napi,
+    cnapi: mocks.cnapi,
+    log: mocks.bunyan
+  }, function (err, res) {
+    t.ifError(err);
+
+    var root = mocks.fs.getRoot();
+    var macFile = serverNics[1].mac + '.json';
+    root['/tmp/cacheDir'][macFile] = 'asdf';
+
+    bp.getBootParams({
+      cacheDir: '/tmp/cacheDir',
+      mac: serverNics[1].mac,
+      napi: mocks.napi,
+      cnapi: mocks.cnapi,
+      log: mocks.bunyan
+    }, function (err2) {
+      t.ok(err2, 'Error returned');
+      if (!err2) {
+        return t.done();
+      }
+
+      t.equal(err2.message, 'connect ECONNREFUSED', 'correct error returned');
+      t.done();
+    });
   });
 };
 

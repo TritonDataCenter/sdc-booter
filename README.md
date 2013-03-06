@@ -10,11 +10,13 @@ Tickets/bugs:
   <https://devhub.joyent.com/jira/browse/HEAD>
 
 
+
 # Overview
 
 This repository contains the DHCP server and related libraries used to
 boot compute nodes.  Its contents end up in the dhcpd zone on the
 headnode.
+
 
 
 # Repository
@@ -35,6 +37,7 @@ headnode.
     server.js       the main entry point for the server
 
 
+
 # Development
 
 There are three useful ways to change this code:
@@ -50,8 +53,26 @@ cannot be used.
 usb-headnode README.
 
 
-# TODO
+Before checking in, please run:
 
-Remaining work for this repo:
+    make prepush
 
-* jsstyling and linting
+and fix any warnings or errors. Note that jsstyle will stop after the first
+file with an error, so you may need to run this multiple times while fixing.
+
+
+To only run the jsstyle / jslint checks:
+
+    make prepush
+
+
+
+# Testing
+
+To run all tests:
+
+    make test
+
+To run a single test:
+
+    ./node_modules/.bin/nodeunit --reporter=tap <test>

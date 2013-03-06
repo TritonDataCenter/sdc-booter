@@ -5,6 +5,7 @@
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
+    "assert-plus": "0.1.2",
     "bunyan": "0.16.7",
     "node-uuid": "1.2.0",
     "restify": "1.4.1",
