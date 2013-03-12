@@ -5,6 +5,7 @@ var bootparams = require('../lib/bootparams');
 var bunyan = require('bunyan');
 var fs = require('fs');
 var uuid = require('node-uuid');
+var util = require('util');
 
 
 var configFile =  __dirname + '/../config.json';
@@ -53,8 +54,13 @@ if (!mac) {
   process.exit(1);
 }
 
-bootparams.getBootParams(
-	mac, napi, cnapi, log, function(err, res) {
+bootparams.getBootParams({
+    cacheDir: util.format('%s/cache', config.tftpRoot),
+    mac: mac,
+    napi: napi,
+    cnapi: cnapi,
+    log: log
+	}, function(err, res) {
 		if (err) {
       log.error(err, 'getBootParams error');
 			console.error('Error: ' + err.message);
