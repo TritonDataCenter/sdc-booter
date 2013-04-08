@@ -5,6 +5,7 @@
  */
 
 var bp;
+var fs = require('fs');
 var clone = require('clone');
 var mockery = require('mockery');
 var mod_mock = require('./lib/mocks');
@@ -16,6 +17,7 @@ var vasync = require('vasync');
 
 // --- Globals
 
+var CONF = JSON.parse(fs.readFileSync(__dirname + '/test-config.json'));
 
 
 // Set this to any of the exports in this file to only run that test,
@@ -27,7 +29,7 @@ var CN1_NICS = [
     belongs_to_type: 'server',
     belongs_to_uuid: '564d5535-52f0-f2ac-72e5-bca4d1d45bfa',
     mac: '00:0c:29:d4:5b:04',
-    owner_uuid: '00000000-0000-0000-0000-000000000000',
+    owner_uuid: CONF.adminUuid,
     primary: false,
     ip: '10.88.88.134',
     netmask: '255.255.255.0',
@@ -47,7 +49,7 @@ var CN1_NICS = [
     belongs_to_type: 'server',
     belongs_to_uuid: '564d5535-52f0-f2ac-72e5-bca4d1d45bfa',
     mac: '00:0c:29:d4:5b:fa',
-    owner_uuid: '00000000-0000-0000-0000-000000000000',
+    owner_uuid: CONF.adminUuid,
     primary: false,
     ip: '10.99.99.78',
     netmask: '255.255.255.0',
@@ -140,9 +142,9 @@ exports.setUp = function (cb) {
 exports['new CN boots'] = function (t) {
   var newNic = {
     belongs_to_type: 'other',
-    belongs_to_uuid: '00000000-0000-0000-0000-000000000000',
+    belongs_to_uuid: CONF.adminUuid,
     mac: '06:b7:ad:86:be:04',
-    owner_uuid: '00000000-0000-0000-0000-000000000000',
+    owner_uuid: CONF.adminUuid,
     primary: false,
     ip: '10.99.99.127',
     netmask: '255.255.255.0',
@@ -162,6 +164,7 @@ exports['new CN boots'] = function (t) {
   };
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: newNic.mac,
     napi: mocks.napi,
@@ -216,6 +219,7 @@ exports['existing CN boots'] = function (t) {
   var expParams = clone(bootParams);
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: serverNics[1].mac,
     napi: mocks.napi,
@@ -261,6 +265,7 @@ exports['existing CN boots: no bootparams'] = function (t) {
   var expParams = clone(DEFAULT_BOOT_PARAMS);
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: serverNics[1].mac,
     napi: mocks.napi,
@@ -302,6 +307,7 @@ exports['admin nic different than booting nic'] = function (t) {
   var expParams = clone(CN1_BOOT_PARAMS);
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: serverNics[1].mac,
     napi: mocks.napi,
@@ -361,6 +367,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
     // First call: things go normally
     function (_, cb) {
       bp.getBootParams({
+        adminUuid: CONF.adminUuid,
         cacheDir: '/tmp/cacheDir',
         mac: serverNics[1].mac,
         napi: mocks.napi,
@@ -382,6 +389,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
     // Second call: napi.getNic() returns an error
     function (_, cb) {
       bp.getBootParams({
+        adminUuid: CONF.adminUuid,
         cacheDir: '/tmp/cacheDir',
         mac: serverNics[1].mac,
         napi: mocks.napi,
@@ -409,6 +417,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
     // Third call: things go normally, and CNAPI returns updated params
     function (_, cb) {
       bp.getBootParams({
+        adminUuid: CONF.adminUuid,
         cacheDir: '/tmp/cacheDir',
         mac: serverNics[1].mac,
         napi: mocks.napi,
@@ -441,6 +450,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
     // Fourth call: napi.getNics() returns an error
     function (_, cb) {
       bp.getBootParams({
+        adminUuid: CONF.adminUuid,
         cacheDir: '/tmp/cacheDir',
         mac: serverNics[1].mac,
         napi: mocks.napi,
@@ -492,6 +502,7 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
   var expParams;
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: serverNics[1].mac,
     napi: mocks.napi,
@@ -502,6 +513,7 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
     expParams = res;
 
     bp.getBootParams({
+      adminUuid: CONF.adminUuid,
       cacheDir: '/tmp/cacheDir',
       mac: serverNics[1].mac,
       napi: mocks.napi,
@@ -539,6 +551,7 @@ exports['error while provisioning nic'] = function (t) {
   };
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: '06:b7:ad:86:be:05',
     napi: mocks.napi,
@@ -577,6 +590,7 @@ exports['invalid JSON in cache file'] = function (t) {
   };
 
   bp.getBootParams({
+    adminUuid: CONF.adminUuid,
     cacheDir: '/tmp/cacheDir',
     mac: serverNics[1].mac,
     napi: mocks.napi,
@@ -590,6 +604,7 @@ exports['invalid JSON in cache file'] = function (t) {
     root['/tmp/cacheDir'][macFile] = 'asdf';
 
     bp.getBootParams({
+      adminUuid: CONF.adminUuid,
       cacheDir: '/tmp/cacheDir',
       mac: serverNics[1].mac,
       napi: mocks.napi,
