@@ -56,8 +56,7 @@ var CN1_NICS = [
     vlan_id: 0,
     nic_tag: 'admin',
     resolvers: [
-      '8.8.8.8',
-      '8.8.4.4'
+      '10.99.99.11'
     ],
     network_uuid: 'e491b841-4fc3-4502-bf95-2935f4c2f42a',
     nic_tags_provided: [
@@ -150,7 +149,7 @@ exports['new CN boots'] = function (t) {
     netmask: '255.255.255.0',
     vlan_id: 0,
     nic_tag: 'admin',
-    resolvers: [ '8.8.8.8', '10.99.99.254' ],
+    resolvers: [ '10.99.99.11' ],
     network_uuid: 'e491b841-4fc3-4502-bf95-2935f4c2f42a'
   };
 
@@ -177,6 +176,7 @@ exports['new CN boots'] = function (t) {
     params.kernel_args.admin_nic = newNic.mac;
     params.ip = newNic.ip;
     params.netmask = newNic.netmask;
+    params.resolvers = [ '10.99.99.11' ];
 
     t.deepEqual(res, params, 'boot params for new CN');
     t.deepEqual(mocks.cnapi.CALLS.getBootParams, [
@@ -232,6 +232,7 @@ exports['existing CN boots'] = function (t) {
     expParams.kernel_args.external_nic = serverNics[0].mac;
     expParams.ip = serverNics[1].ip;
     expParams.netmask = serverNics[1].netmask;
+    expParams.resolvers = serverNics[1].resolvers;
 
     t.deepEqual(res, expParams, 'boot params for existing CN');
     t.deepEqual(mocks.cnapi.CALLS.getBootParams, [
@@ -278,6 +279,7 @@ exports['existing CN boots: no bootparams'] = function (t) {
     expParams.kernel_args.external_nic = serverNics[0].mac;
     expParams.ip = serverNics[1].ip;
     expParams.netmask = serverNics[1].netmask;
+    expParams.resolvers = serverNics[1].resolvers;
 
     t.deepEqual(res, expParams, 'boot params for existing CN');
     t.deepEqual(mocks.cnapi.CALLS.getBootParams, [
@@ -322,6 +324,7 @@ exports['admin nic different than booting nic'] = function (t) {
     expParams.kernel_args.admin_nic = serverNics[0].mac;
     expParams.ip = serverNics[1].ip;
     expParams.netmask = serverNics[1].netmask;
+    expParams.resolvers = serverNics[1].resolvers;
 
     t.deepEqual(res, expParams, 'boot params: admin nic != booting nic');
 
