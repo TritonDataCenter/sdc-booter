@@ -31,7 +31,7 @@ TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
 RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.bz2
 CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
 REPO_MODULES := src/node-pack
-JSSTYLE_FLAGS = -o indent=2,doxygen,unparenthesized-return=0
+JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_VERSION=v0.8.20
