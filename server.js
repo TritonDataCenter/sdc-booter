@@ -1,21 +1,20 @@
 /*
- * Copyright (c) 2012, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2013, Joyent, Inc. All rights reserved.
  *
  * Main entry-point for the booter dhcpd server
  */
 
-var dhcpd = require('./lib/dhcpd');
-
 var bunyan = require('bunyan');
+var dhcpd = require('./lib/dhcpd');
 
 
 var log = bunyan.createLogger({
-        name: 'dhcpd',
-        level: 'debug',
-        serializers: {
-                err: bunyan.stdSerializers.err,
-                req: bunyan.stdSerializers.req
-        }
+    name: 'dhcpd',
+    level: 'debug',
+    serializers: {
+        err: bunyan.stdSerializers.err,
+        req: bunyan.stdSerializers.req
+    }
 });
 
 try {
