@@ -27,10 +27,11 @@ var TITLE_RESCUE = 'title Live 64-bit Rescue (no importing zpool)';
 
 var GPXE_START = ['#!gpxe'];
 var GPXE_INITRD =
-  'initrd tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive';
+    'initrd tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive';
 var GPXE_HASH = GPXE_INITRD + '.hash';
 var GPXE_KERNEL =
-  'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix -B %s';
+    'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix -B %s';
+
 
 
 // --- Internal helpers
@@ -41,6 +42,7 @@ function keyValArgs(params) {
     if (!params) {
         return '';
     }
+
     return Object.keys(params).map(function (k) {
         return format('%s=%s', k, params[k]);
     }).join(',');
@@ -48,14 +50,15 @@ function keyValArgs(params) {
 
 
 function merge(/* ... */) {
-  var res = {};
-  var args = Array.prototype.slice.call(arguments);
-  args.forEach(function (obj) {
-    for (var k in obj) {
-      res[k] = obj[k];
-    }
-  });
-  return res;
+    var res = {};
+    var args = Array.prototype.slice.call(arguments);
+    args.forEach(function (obj) {
+        for (var k in obj) {
+            res[k] = obj[k];
+        }
+    });
+
+    return res;
 }
 
 
