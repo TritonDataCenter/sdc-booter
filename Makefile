@@ -80,6 +80,7 @@ pkg: all
 		bin \
 		server.js \
 		package.json \
+		sapi_manifests \
 		$(BOOTER_PKG_DIR)
 	cp -P smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
 	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
