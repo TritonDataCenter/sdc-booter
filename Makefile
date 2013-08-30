@@ -87,7 +87,7 @@ pkg: all
 	cp -PR src/node-pack $(BOOTER_PKG_DIR)/node_modules/pack
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
-	@mkdir -p $(PKG_DIR)/root/opt/smartdc/sdc-boot
+	mkdir -p $(PKG_DIR)/root/opt/smartdc/sdc-boot/scripts
 	cp $(TOP)/sdc-boot/*.sh \
 	    $(PKG_DIR)/root/opt/smartdc/sdc-boot/
 	cp $(TOP)/deps/sdc-scripts/*.sh \
