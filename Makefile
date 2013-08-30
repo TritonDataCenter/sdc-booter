@@ -57,7 +57,7 @@ include ./tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 .PHONY: all
-all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT)
+all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts
 	$(NPM) rebuild
 
 $(NODEUNIT): | $(NPM_EXEC)
@@ -87,6 +87,11 @@ pkg: all
 	cp -PR src/node-pack $(BOOTER_PKG_DIR)/node_modules/pack
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
+	@mkdir -p $(PKG_DIR)/root/opt/smartdc/sdc-boot
+	cp $(TOP)/sdc-boot/*.sh \
+	    $(PKG_DIR)/root/opt/smartdc/sdc-boot/
+	cp $(TOP)/deps/sdc-scripts/*.sh \
+	    $(PKG_DIR)/root/opt/smartdc/sdc-boot/scripts/
 	# Clean up some dev / build bits
 	find $(PKG_DIR) -name "*.pyc" | xargs rm -f
 	find $(PKG_DIR) -name "*.o" | xargs rm -f
