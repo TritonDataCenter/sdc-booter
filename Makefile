@@ -87,11 +87,9 @@ pkg: all
 	cp -PR src/node-pack $(BOOTER_PKG_DIR)/node_modules/pack
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
-	mkdir -p $(PKG_DIR)/root/opt/smartdc/sdc-boot/scripts
-	cp $(TOP)/sdc-boot/*.sh \
-	    $(PKG_DIR)/root/opt/smartdc/sdc-boot/
-	cp $(TOP)/deps/sdc-scripts/*.sh \
-	    $(PKG_DIR)/root/opt/smartdc/sdc-boot/scripts/
+	mkdir -p $(PKG_DIR)/root/opt/smartdc/sdc-boot
+	cp -R $(TOP)/deps/sdc-scripts/* $(PKG_DIR)/root/opt/smartdc/sdc-boot/
+	cp -R $(TOP)/sdc-boot/* $(PKG_DIR)/root/opt/smartdc/sdc-boot/
 	# Clean up some dev / build bits
 	find $(PKG_DIR) -name "*.pyc" | xargs rm -f
 	find $(PKG_DIR) -name "*.o" | xargs rm -f
@@ -124,3 +122,5 @@ endif
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.targ
+
+sdc-scripts: deps/sdc-scripts/.git
