@@ -1,4 +1,5 @@
 #!/bin/bash
+# -*- mode: shell-script; fill-column: 80; -*-
 #
 # Copyright (c) 2013 Joyent Inc. All rights reserved.
 #
@@ -9,7 +10,7 @@ set -o xtrace
 CONFIG_AGENT_LOCAL_MANIFESTS_DIRS=/opt/smartdc/booter
 
 # Include common utility functions (then run the boilerplate)
-source /opt/smartdc/sdc-boot/lib/util.sh
+source /opt/smartdc/boot/lib/util.sh
 sdc_common_setup
 
 # Cookie to identify this as a SmartDC zone and its role
