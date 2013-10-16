@@ -20,6 +20,14 @@ mkdir -p /var/smartdc/dhcpd
 echo "" >>/root/.profile
 echo "export PATH=\$PATH:/opt/smartdc/booter/node/bin:/opt/smartdc/booter/node_modules/.bin:/opt/smartdc/booter/bin" >>/root/.profile
 
+echo "Adding log rotation"
+sdc_log_rotation_add amon-agent /var/svc/log/*amon-agent*.log 1g
+sdc_log_rotation_add config-agent /var/svc/log/*config-agent*.log 1g
+sdc_log_rotation_add registrar /var/svc/log/*registrar*.log 1g
+sdc_log_rotation_add dhcpd /var/svc/log/*dhcpd*.log 1g
+sdc_log_rotation_add tftpd /var/svc/log/*tftpd*.log 1g
+sdc_log_rotation_setup_end
+
 echo "Finishing setup of dhcpd zone"
 
 # All done, run boilerplate end-of-setup
