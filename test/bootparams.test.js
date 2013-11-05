@@ -174,8 +174,6 @@ exports['new CN boots'] = function (t) {
 
         var params = clone(DEFAULT_BOOT_PARAMS);
         params.kernel_args.admin_nic = newNic.mac;
-        params.kernel_args.admin_ip = newNic.ip;
-        params.kernel_args.admin_netmask = newNic.netmask;
         params.ip = newNic.ip;
         params.netmask = newNic.netmask;
         params.resolvers = [ '10.99.99.11' ];
@@ -234,8 +232,6 @@ exports['existing CN boots'] = function (t) {
         expParams.kernel_args.external_nic = serverNics[0].mac;
         expParams.ip = serverNics[1].ip;
         expParams.netmask = serverNics[1].netmask;
-        expParams.kernel_args.admin_ip = serverNics[1].ip;
-        expParams.kernel_args.admin_netmask = serverNics[1].netmask;
         expParams.resolvers = serverNics[1].resolvers;
 
         t.deepEqual(res, expParams, 'boot params for existing CN');
@@ -284,8 +280,6 @@ exports['existing CN boots: no bootparams'] = function (t) {
         expParams.ip = serverNics[1].ip;
         expParams.netmask = serverNics[1].netmask;
         expParams.resolvers = serverNics[1].resolvers;
-        expParams.kernel_args.admin_ip = serverNics[1].ip;
-        expParams.kernel_args.admin_netmask = serverNics[1].netmask;
 
         t.deepEqual(res, expParams, 'boot params for existing CN');
         t.deepEqual(mocks.cnapi.CALLS.getBootParams, [
@@ -331,8 +325,6 @@ exports['admin nic different than booting nic'] = function (t) {
         expParams.ip = serverNics[1].ip;
         expParams.netmask = serverNics[1].netmask;
         expParams.resolvers = serverNics[1].resolvers;
-        expParams.kernel_args.admin_ip = serverNics[0].ip;
-        expParams.kernel_args.admin_netmask = serverNics[0].netmask;
 
         t.deepEqual(res, expParams, 'boot params: admin nic != booting nic');
 
