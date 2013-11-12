@@ -16,5 +16,7 @@
   "defaultGateway": "{{{compute_node_default_gateway}}}",
   "serverIp": "{{{dhcpd_admin_ip}}}",
   "leaseTime": "{{{dhcp_lease_time}}}",
-  "netmask": "{{{admin_netmask}}}"
+  "netmask": "{{{admin_netmask}}}"{{#allow_missing_class_id}},
+  "allowMissingClassID": true{{/allow_missing_class_id}}
 }
+
