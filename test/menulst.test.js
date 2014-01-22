@@ -30,7 +30,8 @@ var GPXE_INITRD =
     'initrd tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive';
 var GPXE_HASH = GPXE_INITRD + '.hash';
 var GPXE_KERNEL =
-    'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix -B %s';
+    'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix' +
+    ' %s-B %s';
 
 
 
@@ -100,7 +101,7 @@ exports['defaults'] = function (t) {
             format(MODULE, params.platform),
             '',
             TITLE_KMDB,
-            format(KERNEL, params.platform, '-kd ', keyValArgs(kArgs)),
+            format(KERNEL, params.platform, '-d -k ', keyValArgs(kArgs)),
             format(MODULE, params.platform),
             '',
             TITLE_RESCUE,
@@ -111,7 +112,70 @@ exports['defaults'] = function (t) {
 
         menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
             t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                format(GPXE_KERNEL, params.platform, keyValArgs(gpxeKArgs)),
+                format(GPXE_KERNEL, params.platform, '', keyValArgs(gpxeKArgs)),
+                format(GPXE_INITRD, params.platform),
+                'boot'
+            ]), 'boot.gpxe');
+            t.done();
+        });
+    });
+};
+
+
+exports['defaults with kernel flags'] = function (t) {
+    var params = {
+        platform: 'latest',
+        kernel_args: {
+            rabbitmq: 'guest:guest:10.99.99.16:5672'
+        },
+        kernel_flags: {
+            '-k': true,
+            '-x': true,
+            '-m': 'milestone=none'
+        }
+    };
+    var conparams = {
+        console: '${os_console}',
+        '${os_console}-mode': '"115200,8,n,1,-"'
+    };
+    var gpxe_conparams = {
+        console: 'text',
+        'text-mode': '"115200,8,n,1,-"'
+    };
+
+    var noImportArgs = merge(params.kernel_args, { noimport: 'true' },
+        conparams);
+    var kArgs = merge(params.kernel_args, conparams);
+    var gpxeKArgs = merge(params.kernel_args, gpxe_conparams);
+
+    menuLst.buildMenuLst(params, '/tmp', function (menu) {
+        t.deepEqual(menu.split('\n'), MENU_START.concat([
+            'variable os_console text',
+            'serial --unit=1 --speed=115200 --word=8 --parity=no --stop=1',
+            'terminal composite',
+            'color cyan/blue white/blue',
+            '',
+            TITLE_LIVE,
+            format(KERNEL, params.platform, '-k -m milestone=none -x ',
+                   keyValArgs(kArgs)),
+            format(MODULE, params.platform),
+            '',
+            TITLE_KMDB,
+            format(KERNEL, params.platform, '-d -k -m milestone=none -x ',
+                   keyValArgs(kArgs)),
+            format(MODULE, params.platform),
+            '',
+            TITLE_RESCUE,
+            format(KERNEL, params.platform, '-k -m milestone=none -x ',
+                   keyValArgs(noImportArgs)),
+            format(MODULE, params.platform),
+            ''
+        ]), 'menu.lst');
+
+        menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
+            t.deepEqual(cfg.split('\n'), GPXE_START.concat([
+                format(GPXE_KERNEL, params.platform, '-k -m milestone=none -x',
+                       keyValArgs(gpxeKArgs)),
                 format(GPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.gpxe');
@@ -149,7 +213,7 @@ exports['serial console'] = function (t) {
             format(MODULE, params.platform),
             '',
             TITLE_KMDB,
-            format(KERNEL, params.platform, '-kd ', keyValArgs(conparams)),
+            format(KERNEL, params.platform, '-d -k ', keyValArgs(conparams)),
             format(MODULE, params.platform),
             '',
             TITLE_RESCUE,
@@ -160,7 +224,7 @@ exports['serial console'] = function (t) {
 
         menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
               t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                  format(GPXE_KERNEL, params.platform,
+                  format(GPXE_KERNEL, params.platform, '',
                       keyValArgs(gpxe_conparams)),
                   format(GPXE_INITRD, params.platform),
                   'boot'
@@ -197,7 +261,7 @@ exports['VGA console'] = function (t) {
             format(MODULE, params.platform),
             '',
             TITLE_KMDB,
-            format(KERNEL, params.platform, '-kd ', keyValArgs(conparams)),
+            format(KERNEL, params.platform, '-d -k ', keyValArgs(conparams)),
             format(MODULE, params.platform),
             '',
             TITLE_RESCUE,
@@ -208,7 +272,7 @@ exports['VGA console'] = function (t) {
 
         menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
             t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                format(GPXE_KERNEL, params.platform,
+                format(GPXE_KERNEL, params.platform, '',
                     keyValArgs(gpxe_conparams)),
                 format(GPXE_INITRD, params.platform),
                 'boot'
