@@ -174,7 +174,7 @@ exports['defaults with kernel flags'] = function (t) {
 
         menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
             t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                format(GPXE_KERNEL, params.platform, '-k -m milestone=none -x',
+                format(GPXE_KERNEL, params.platform, '-k -m milestone=none -x ',
                        keyValArgs(gpxeKArgs)),
                 format(GPXE_INITRD, params.platform),
                 'boot'

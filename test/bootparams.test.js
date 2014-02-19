@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2014, Joyent, Inc. All rights reserved.
  *
  * bootparams tests
  */
@@ -16,6 +16,8 @@ var vasync = require('vasync');
 
 
 // --- Globals
+
+
 
 var CONF = JSON.parse(fs.readFileSync(__dirname + '/test-config.json'));
 
@@ -97,6 +99,23 @@ function error404() {
 }
 
 
+function getBootParams(params, callback) {
+    var bootParams = {
+        adminUuid: CONF.adminUuid,
+        cacheDir: '/tmp/cacheDir',
+        napi: mocks.napi,
+        cnapi: mocks.cnapi,
+        log: mocks.bunyan
+    };
+
+    for (var p in params) {
+        bootParams[p] = params[p];
+    }
+
+    bp.getBootParams(bootParams, callback);
+}
+
+
 
 // --- Setup
 
@@ -155,6 +174,7 @@ exports['new CN boots'] = function (t) {
 
     mocks.napi.VALUES = {
         getNic: [ { err: error404() } ],
+        listAggrs: [ { res: [] } ],
         provisionNic: [ { res: newNic } ]
     };
 
@@ -162,14 +182,7 @@ exports['new CN boots'] = function (t) {
         getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
     };
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: newNic.mac,
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: newNic.mac }, function (err, res) {
         t.ifError(err);
 
         var params = clone(DEFAULT_BOOT_PARAMS);
@@ -209,7 +222,8 @@ exports['existing CN boots'] = function (t) {
 
     mocks.napi.VALUES = {
         getNic: [ { res: serverNics[1] } ],
-        getNics: [ { res: serverNics } ]
+        getNics: [ { res: serverNics } ],
+        listAggrs: [ { res: [] } ]
     };
 
     mocks.cnapi.VALUES = {
@@ -218,14 +232,7 @@ exports['existing CN boots'] = function (t) {
 
     var expParams = clone(bootParams);
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: serverNics[1].mac,
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err);
 
         expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -253,7 +260,8 @@ exports['existing CN boots: no bootparams'] = function (t) {
 
     mocks.napi.VALUES = {
         getNic: [ { res: serverNics[1] } ],
-        getNics: [ { res: serverNics } ]
+        getNics: [ { res: serverNics } ],
+        listAggrs: [ { res: [] } ]
     };
 
     mocks.cnapi.VALUES = {
@@ -265,14 +273,7 @@ exports['existing CN boots: no bootparams'] = function (t) {
 
     var expParams = clone(DEFAULT_BOOT_PARAMS);
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: serverNics[1].mac,
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err);
 
         expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -299,7 +300,8 @@ exports['admin nic different than booting nic'] = function (t) {
 
     mocks.napi.VALUES = {
         getNic: [ { res: serverNics[1] } ],
-        getNics: [ { res: serverNics } ]
+        getNics: [ { res: serverNics } ],
+        listAggrs: [ { res: [] } ]
     };
 
     mocks.cnapi.VALUES = {
@@ -308,14 +310,7 @@ exports['admin nic different than booting nic'] = function (t) {
 
     var expParams = clone(CN1_BOOT_PARAMS);
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: serverNics[1].mac,
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err);
 
         // admin_nic will be set to the nic in NAPI with nic_tags_provided of
@@ -351,6 +346,10 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
             // not called 2nd time: error from napi.getNic() prevents this
             { res: serverNics },
             { err: new restify.RestError('connect ECONNREFUSED') }
+        ],
+        listAggrs: [
+            { res: [] },
+            { res: [] }
         ]
     };
 
@@ -369,14 +368,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
     funcs: [
         // First call: things go normally
         function (_, cb) {
-            bp.getBootParams({
-                adminUuid: CONF.adminUuid,
-                cacheDir: '/tmp/cacheDir',
-                mac: serverNics[1].mac,
-                napi: mocks.napi,
-                cnapi: mocks.cnapi,
-                log: mocks.bunyan
-            }, function (err, res) {
+            getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err);
                 expParams = res;
 
@@ -391,14 +383,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
 
         // Second call: napi.getNic() returns an error
         function (_, cb) {
-            bp.getBootParams({
-                adminUuid: CONF.adminUuid,
-                cacheDir: '/tmp/cacheDir',
-                mac: serverNics[1].mac,
-                napi: mocks.napi,
-                cnapi: mocks.cnapi,
-                log: mocks.bunyan
-            }, function (err, res) {
+            getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err);
                 t.deepEqual(res, expParams, 'same params returned');
 
@@ -419,14 +404,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
 
         // Third call: things go normally, and CNAPI returns updated params
         function (_, cb) {
-            bp.getBootParams({
-                adminUuid: CONF.adminUuid,
-                cacheDir: '/tmp/cacheDir',
-                mac: serverNics[1].mac,
-                napi: mocks.napi,
-                cnapi: mocks.cnapi,
-                log: mocks.bunyan
-            }, function (err, res) {
+            getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err);
                 expParams.kernel_args.other_param =
                     bootParams2.kernel_args.other_param;
@@ -452,14 +430,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
 
         // Fourth call: napi.getNics() returns an error
         function (_, cb) {
-            bp.getBootParams({
-                adminUuid: CONF.adminUuid,
-                cacheDir: '/tmp/cacheDir',
-                mac: serverNics[1].mac,
-                napi: mocks.napi,
-                cnapi: mocks.cnapi,
-                log: mocks.bunyan
-            }, function (err, res) {
+            getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err);
                 t.deepEqual(res, expParams, 'updated params returned');
 
@@ -492,7 +463,8 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
         ],
         getNics: [
             { res: serverNics }
-        ]
+        ],
+        listAggrs: [ { res: [] } ]
     };
 
     mocks.cnapi.VALUES = {
@@ -504,25 +476,11 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
 
     var expParams;
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: serverNics[1].mac,
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err);
         expParams = res;
 
-        bp.getBootParams({
-            adminUuid: CONF.adminUuid,
-            cacheDir: '/tmp/cacheDir',
-            mac: serverNics[1].mac,
-            napi: mocks.napi,
-            cnapi: mocks.cnapi,
-            log: mocks.bunyan
-        }, function (err2, res2) {
+        getBootParams({ mac: serverNics[1].mac }, function (err2, res2) {
             t.ifError(err2);
             t.deepEqual(res2, expParams, 'same params returned');
 
@@ -546,21 +504,15 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
 exports['error while provisioning nic'] = function (t) {
     mocks.napi.VALUES = {
         getNic: [ { err: error404() } ],
-        provisionNic: [ { err: new Error('XXX bad error') } ]
+        provisionNic: [ { err: new Error('XXX bad error') } ],
+        listAggrs: [ { res: [] } ]
     };
 
     mocks.cnapi.VALUES = {
         getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
     };
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: '06:b7:ad:86:be:05',
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: '06:b7:ad:86:be:05' }, function (err, res) {
         t.ok(err, 'Error returned');
         if (!err) {
             return t.done();
@@ -583,7 +535,8 @@ exports['invalid JSON in cache file'] = function (t) {
         ],
         getNics: [
             { res: serverNics }
-        ]
+        ],
+        listAggrs: [ { res: [] } ]
     };
 
     mocks.cnapi.VALUES = {
@@ -592,28 +545,14 @@ exports['invalid JSON in cache file'] = function (t) {
         ]
     };
 
-    bp.getBootParams({
-        adminUuid: CONF.adminUuid,
-        cacheDir: '/tmp/cacheDir',
-        mac: serverNics[1].mac,
-        napi: mocks.napi,
-        cnapi: mocks.cnapi,
-        log: mocks.bunyan
-    }, function (err, res) {
+    getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err);
 
         var root = mocks.fs.getRoot();
         var macFile = serverNics[1].mac + '.json';
         root['/tmp/cacheDir'][macFile] = 'asdf';
 
-        bp.getBootParams({
-            adminUuid: CONF.adminUuid,
-            cacheDir: '/tmp/cacheDir',
-            mac: serverNics[1].mac,
-            napi: mocks.napi,
-            cnapi: mocks.cnapi,
-            log: mocks.bunyan
-        }, function (err2) {
+        getBootParams({ mac: serverNics[1].mac }, function (err2) {
             t.ok(err2, 'Error returned');
             if (!err2) {
                 return t.done();
@@ -622,6 +561,83 @@ exports['invalid JSON in cache file'] = function (t) {
             t.equal(err2.message, 'connect ECONNREFUSED',
                 'correct error returned');
             t.done();
+        });
+    });
+};
+
+
+exports['aggregation'] = function (t) {
+    var serverNics = clone(CN1_NICS);
+    var bootParams = clone(CN1_BOOT_PARAMS);
+    var bootParams2 = clone(CN1_BOOT_PARAMS);
+    bootParams2.kernel_args.admin_nic = serverNics[1].mac;
+
+    var aggr = {
+        lacp_mode: 'passive',
+        macs: [ serverNics[0].mac, serverNics[1].mac ],
+        name: 'aggr0',
+        nic_tags_provided: [ 'admin', 'external' ]
+    };
+
+    mocks.napi.VALUES = {
+        getNic: [
+            { res: serverNics[1] },
+            { res: serverNics[1] }
+        ],
+        getNics: [
+            { res: serverNics },
+            { res: serverNics }
+        ],
+        listAggrs: [
+            { res: [ aggr ] },
+            { res: [ aggr ] }
+        ]
+    };
+
+    mocks.cnapi.VALUES = {
+        getBootParams: [
+            { res: bootParams },
+            { res: bootParams2 }
+        ]
+    };
+
+    var expParams = clone(bootParams);
+
+    getBootParams({ mac: serverNics[1].mac }, function (err, res) {
+        t.ifError(err);
+
+        expParams.kernel_args.admin_nic = 'aggr0';
+        expParams.kernel_args.external_nic = 'aggr0';
+        expParams.kernel_args.aggr0_lacp_mode = 'passive';
+        expParams.kernel_args.aggr0_aggr = util.format(
+            '\"%s\"', aggr.macs.join(','));
+
+        expParams.ip = serverNics[1].ip;
+        expParams.netmask = serverNics[1].netmask;
+        expParams.resolvers = serverNics[1].resolvers;
+
+        t.deepEqual(res, expParams, 'boot params');
+        t.deepEqual(mocks.cnapi.CALLS.getBootParams, [
+            { uuid: serverNics[1].belongs_to_uuid }
+        ], 'CNAPI /boot called correctly');
+
+        t.deepEqual(mocks.napi.CALLS.getNics, [
+            { uuid: serverNics[1].belongs_to_uuid }
+        ], 'NAPI /nics called correctly');
+
+        t.deepEqual(mocks.napi.CALLS.listAggrs, [
+            { params: { belongs_to_uuid: serverNics[1].belongs_to_uuid } }
+        ], 'NAPI /aggregations called correctly');
+
+        // Boot again, but with admin_nic overridden by CNAPI bootparams
+        getBootParams({ mac: serverNics[1].mac }, function (err2, res2) {
+            t.ifError(err2);
+
+            var expParams2 = clone(expParams);
+            expParams2.kernel_args.admin_nic = serverNics[1].mac;
+            t.deepEqual(res2, expParams2, 'second boot params');
+
+            return t.done();
         });
     });
 };

@@ -125,6 +125,10 @@ function createMocks() {
         return this._handle('getNics', { uuid: uuid }, cb);
     };
 
+    mocks.napi.listAggrs = function (params, cb) {
+        return this._handle('listAggrs', { params: params }, cb);
+    };
+
     mocks.napi.provisionNic = function (network, params, cb) {
         return this._handle('provisionNic',
             { network: network, params: params }, cb);
