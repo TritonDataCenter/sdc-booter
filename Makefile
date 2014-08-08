@@ -58,7 +58,7 @@ include ./tools/mk/Makefile.smf.defs
 #
 .PHONY: all
 all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts
-	$(NPM) rebuild
+	$(NPM) install
 
 $(NODEUNIT): | $(NPM_EXEC)
 	$(NPM) install
