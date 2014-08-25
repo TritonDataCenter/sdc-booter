@@ -14,12 +14,18 @@
  *
  *    o no lines longer than 80 characters
  *    o file does not end with a blank line
+ *    o Do not use 'local' and var initialization *using a subshell* in the
+ *      same statement. See
+ *      <http://www.tldp.org/LDP/abs/html/localvar.html#EXITVALANOMALY01>
+ *      for why not. Arguably this belongs in a separate 'bashlint'.
  *
  * Future enhancements could include:
  *    o indents consistent with respect to tabs, spaces
  *    o indents consistently sized (all are some multiple of the smallest
  *      indent, which must be a tab or 4 or 8 spaces)
  */
+
+var VERSION = '2.0.0';
 
 var mod_assert = require('assert');
 var mod_fs = require('fs');
@@ -50,6 +56,8 @@ function checkFile(filename)
 	var text = mod_fs.readFileSync(filename, 'utf-8');
 	var lines = text.split('\n');
 	var i;
+	var styled = false;
+	var styleStart;
 
 	mod_assert.ok(lines.length > 0);
 
@@ -59,12 +67,48 @@ function checkFile(filename)
 	for (i = 1; i <= lines.length; i++) {
 		var line = expandTabs(lines[i - 1]);
 
-		if (line.length > 80) {
+		if (i > 1 && lines[i-2].match(/# BASHSTYLED/)) {
+			continue;
+		}
+
+		if (line.match(/# BEGIN BASHSTYLED/)) {
+			styleStart = i;
+			styled = true;
+		}
+
+		if (line.match(/# END BASHSTYLED/)) {
+			if (styled != true) {
+				nerrors++;
+				console.log('%s: %d: END BASHSTYLED w/o corresponding BEGIN',
+				            filename, i);
+			}
+			styled = false;
+		}
+
+		if (!styled && line.match(/^\s*local\s+(\w+)\s*=.*\$\(/)) {
+			nerrors++;
+			var m = line.match(/^\s*local\s+(\w+)\s*=/);
+			console.log('%s: %d: declaring and setting a "local" ' +
+				'var in the same statement ' +
+				'ignores a subshell return code ' +
+				'<http://www.tldp.org/LDP/abs/html/localvar.html#EXITVALANOMALY01>: ' +
+				'local %s=...',
+				filename, i, m[1]);
+		}
+
+		if (!styled && line.length > 80) {
 			nerrors++;
 			console.log('%s: %d: line exceeds 80 columns',
 			    filename, i);
 		}
 	}
+
+	if (styled) {
+		nerrors++;
+		console.log('%s: %d: BEGIN BASHSTYLED that does not END',
+		            filename, styleStart);
+	}
+
 
 	/*
 	 * No sane editor lets you save a file without a newline at the very end.

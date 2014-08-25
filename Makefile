@@ -13,12 +13,14 @@ NAME=dhcpd
 #
 # Directories
 #
+
 TOP := $(shell pwd)
 
 
 #
 # Tools
 #
+
 NODEUNIT	:= ./node_modules/.bin/nodeunit
 NPM_FLAGS = --cache=$(TOP)/build/tmp/npm-cache
 
@@ -26,9 +28,12 @@ NPM_FLAGS = --cache=$(TOP)/build/tmp/npm-cache
 #
 # Files
 #
+
+BASH_FILES	:= bin/booter bin/dhcpd
 JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js')
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = $(JS_FILES)
+JSON_FILES	:= config.json.sample package.json
 JSSTYLE_FILES	 = $(JS_FILES)
 SMF_MANIFESTS_IN = smf/manifests/dhcpd.xml.in smf/manifests/tftpd.xml.in
 PKG_DIR = $(BUILD)/pkg
@@ -48,6 +53,7 @@ endif
 #
 # Included definitions
 #
+
 include ./tools/mk/Makefile.defs
 ifeq ($(shell uname -s),SunOS)
 	include ./tools/mk/Makefile.node_prebuilt.defs
@@ -62,6 +68,7 @@ include ./tools/mk/Makefile.smf.defs
 #
 # Repo-specific targets
 #
+
 .PHONY: all
 all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts
 	$(NPM) install
@@ -76,6 +83,7 @@ test: | $(NODEUNIT)
 #
 # Packaging targets
 #
+
 .PHONY: pkg
 pkg: all
 	rm -rf $(PKG_DIR)
@@ -121,6 +129,7 @@ publish:
 #
 # Includes
 #
+
 include ./tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)
 	include ./tools/mk/Makefile.node_prebuilt.targ
