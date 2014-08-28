@@ -98,7 +98,7 @@ pkg: all
 		package.json \
 		sapi_manifests \
 		$(BOOTER_PKG_DIR)
-	cp -P smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
+	cp smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
 	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
 	cp -PR src/node-pack $(BOOTER_PKG_DIR)/node_modules/pack
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
