@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2015, Joyent, Inc.
 #
 
 NAME=dhcpd
@@ -22,7 +22,6 @@ TOP := $(shell pwd)
 #
 
 NODEUNIT	:= ./node_modules/.bin/nodeunit
-NPM_FLAGS = --cache=$(TOP)/build/tmp/npm-cache
 
 
 #
@@ -44,11 +43,10 @@ CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
 REPO_MODULES := src/node-pack
 JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 
+NODE_PREBUILT_VERSION=v0.10.32
 ifeq ($(shell uname -s),SunOS)
-	# Allow building on a SmartOS image other than sdc-smartos/1.6.3.
-	NODE_PREBUILT_IMAGE=fd2cc906-8938-11e3-beab-4359c665ac99
-	NODE_PREBUILT_VERSION=v0.8.28
 	NODE_PREBUILT_TAG=zone
+	NODE_PREBUILT_IMAGE=de411e86-548d-11e4-a4b7-3bb60478632a
 endif
 
 
@@ -74,9 +72,11 @@ include ./tools/mk/Makefile.smf.defs
 .PHONY: all
 all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts
 	$(NPM) install
+	cp -r src/node-pack node_modules/pack
 
 $(NODEUNIT): | $(NPM_EXEC)
 	$(NPM) install
+	cp -r src/node-pack node_modules/pack
 
 .PHONY: test
 test: | $(NODEUNIT)
@@ -92,15 +92,15 @@ pkg: all
 	mkdir -p $(BOOTER_PKG_DIR)/smf/manifests
 	mkdir -p $(TFTPBOOT_PKG_DIR)
 	cp $(TOP)/tftpboot/* $(TFTPBOOT_PKG_DIR)
-	cp -PR lib \
-		bin \
-		server.js \
+	cp -PR bin \
+		lib \
 		package.json \
+		node_modules \
+		server.js \
 		sapi_manifests \
 		$(BOOTER_PKG_DIR)
 	cp smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
 	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
-	cp -PR src/node-pack $(BOOTER_PKG_DIR)/node_modules/pack
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
 	mkdir -p $(PKG_DIR)/root/opt/smartdc/boot
