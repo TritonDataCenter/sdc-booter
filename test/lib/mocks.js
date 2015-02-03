@@ -5,13 +5,15 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 /*
  * mocks for tests
  */
 
+var mockery = require('mockery');
+var mod_path = require('path');
 
 
 
@@ -20,7 +22,36 @@
 
 
 var LOG = false;
+var MOCKS;
+var REGISTERED = false;
 var ROOT = {};
+var STAT_INO = 12;
+
+
+
+// --- Mock fs.Stats object returned by fs.lstat()
+
+
+
+function FakeStatsObj(opts) {
+    this.file = opts.file;
+    this.ino = STAT_INO++;
+}
+
+
+FakeStatsObj.prototype.isDirectory = function _isDir() {
+    return !this.file;
+};
+
+
+FakeStatsObj.prototype.isFile = function _isFile() {
+    return this.file;
+};
+
+
+FakeStatsObj.prototype.isSymbolicLink = function _isSym() {
+    return false;
+};
 
 
 
@@ -84,7 +115,7 @@ function _splitFile(f) {
 
 
 
-// --- Setup / Teardown
+// --- Exports
 
 
 
@@ -93,34 +124,6 @@ function _splitFile(f) {
  */
 function createMocks() {
     var mocks = {};
-
-    // bunyan
-
-    mocks.bunyan = {
-        VALUES: {
-            trace: [],
-            debug: [],
-            error: [],
-            warn: [],
-            info: []
-        },
-
-        _log: function (level, args) {
-            if (args.length !== 0) {
-                this.VALUES[level].push(args);
-                if (LOG) {
-                    console.error('# %s %j', level, args);
-                }
-            }
-            return true;
-        },
-
-        trace: function () { return this._log('trace', arguments); },
-        debug: function () { return this._log('debug', arguments); },
-        error: function () { return this._log('error', arguments); },
-        warn: function () { return this._log('warn', arguments); },
-        info: function () { return this._log('info', arguments); }
-    };
 
     // NAPI
 
@@ -158,14 +161,84 @@ function createMocks() {
 
     // sdc-clients
 
-    mocks.sdcClients = {};
+    mocks.sdcClients = {
+        CNAPI: function FakeCNAPI() { },
+        NAPI: function FakeNAPI() { }
+    };
 
     // fs
 
     ROOT = {};
     mocks.fs = {
+        exists: function (file, cb) {
+            return setImmediate(cb, ROOT.hasOwnProperty(file));
+        },
+
         getRoot: function () {
             return ROOT;
+        },
+
+        lstat: function (file, cb) {
+            var dirName = mod_path.dirname(file);
+            var err;
+            var fileName = mod_path.basename(file);
+
+            if (ROOT.hasOwnProperty(file)) {
+                return setImmediate(cb, null,
+                    new FakeStatsObj({ file: false }));
+            }
+
+            if (!ROOT.hasOwnProperty(dirName)) {
+                err = new Error('ENOENT: ' + dirName);
+                err.code = 'ENOENT';
+                return setImmediate(cb, err);
+            }
+
+            if (!ROOT[dirName].hasOwnProperty(fileName)) {
+                err = new Error('ENOENT: ' + file);
+                err.code = 'ENOENT';
+                return setImmediate(cb, err);
+            }
+
+            return setImmediate(cb, null, new FakeStatsObj({ file: true }));
+        },
+
+        mkdir: function (dir, mode, cb) {
+            if (!cb) {
+                cb = mode;
+            }
+
+            if (ROOT.hasOwnProperty(dir)) {
+                var err = new Error('EEXIST: ' + dir);
+                err.code = 'EEXIST';
+                return setImmediate(cb, err);
+            }
+
+            ROOT[dir] = {};
+            return setImmediate(cb);
+        },
+
+        mkdirSync: function (dir, mode) {
+            if (ROOT.hasOwnProperty(dir)) {
+                var err = new Error('EEXIST: ' + dir);
+                err.code = 'EEXIST';
+                throw err;
+            }
+
+            ROOT[dir] = {};
+            return;
+        },
+
+        // XXX: this doesn't return sub-directories, which is due to how we're
+        // storing directories in ROOT
+        readdir: function (dir, cb) {
+            if (!ROOT.hasOwnProperty(dir)) {
+                var err = new Error('ENOENT: ' + dir);
+                err.code = 'ENOENT';
+                return setImmediate(cb, err);
+            }
+
+            return setImmediate(cb, null, Object.keys(ROOT[dir]));
         },
 
         readFile: function (file, cb) {
@@ -173,45 +246,99 @@ function createMocks() {
 
             if (!ROOT.hasOwnProperty(p.dir) ||
                 !ROOT[p.dir].hasOwnProperty(p.file)) {
-                return cb(_ENOENT(file));
+                return setImmediate(cb, _ENOENT(file));
             }
 
-            return cb(null, ROOT[p.dir][p.file]);
+            return setImmediate(cb, null, ROOT[p.dir][p.file]);
         },
 
-        mkdir: function (dir, cb) {
-            if (ROOT.hasOwnProperty(dir)) {
-                var err = new Error('EEXIST: ' + dir);
-                err.code = 'EEXIST';
-                return cb(err);
-            }
-
-            ROOT[dir] = {};
-            return cb();
+        stat: function (file, cb) {
+            // This is really just to reassure mkdirp that it has created
+            // a directory:
+            return setImmediate(cb, null, {
+                isDirectory: function () { return true; }
+            });
         },
 
         writeFile: function (file, data, cb) {
             var p = _splitFile(file);
 
             if (!ROOT.hasOwnProperty(p.dir)) {
-                return cb(_ENOENT(file));
+                return setImmediate(cb, _ENOENT(file));
             }
 
             ROOT[p.dir][p.file] = data;
-            return cb();
+            return setImmediate(cb);
         }
 
     };
+
+    mocks.mkdirp = function (dir, callback) {
+        ROOT[dir] = {};
+        return callback();
+    };
+
+    MOCKS = mocks;
+    return mocks;
+}
+
+
+function registerMocks() {
+    if (REGISTERED) {
+        return;
+    }
+
+    var mocks = createMocks();
+    mockery.enable();
+    mockery.registerMock('sdc-clients', mocks.sdcClients);
+    mockery.registerMock('fs', mocks.fs);
+    // The mkdirp mock is required, since we use a real bunyan logger in our
+    // tests (test/lib/log.js), and it requires mkdirp before we can setup
+    // a mock for it. This prevents future require()s from getting the real
+    // thing:
+    mockery.registerMock('mkdirp', mocks.mkdirp);
+
+    [
+        'assert',
+        'assert-plus',
+        'crypto',
+        'dgram',
+        'extsprintf',
+        'events',
+        'findit',
+        'node-uuid',
+        'pack',
+        'path',
+        'sprintf',
+        'stream',
+        'util',
+        'vasync',
+        'verror',
+        '../../lib/dhcpd',
+        '../lib/bootparams',
+        '../lib/dhcpd',
+        '../lib/menulst',
+        './bootparams',
+        './dhcp',
+        './find',
+        './json-file',
+        './menulst',
+        './net-file'
+    ].forEach(function (mod) {
+        mockery.registerAllowable(mod);
+    });
+
+    REGISTERED = true;
 
     return mocks;
 }
 
 
 
-// --- Exports
-
-
-
 module.exports = {
-    create: createMocks
+    create: createMocks,
+    getCreated: function () {
+        return MOCKS;
+    },
+    register: registerMocks
 };

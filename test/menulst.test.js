@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 /*
@@ -13,7 +13,8 @@
  */
 
 var format = require('util').format;
-var menuLst = require('../lib/menulst');
+var menuLst;
+var mod_mock = require('./lib/mocks');
 
 
 
@@ -27,15 +28,16 @@ var runOne;
 var MENU_START = ['default 0', 'timeout 5', 'min_mem64 1024'];
 var KERNEL =
     '  kernel$ /os/%s/platform/i86pc/kernel/amd64/unix %s-B %s';
-var MODULE =
-        '  module /os/%s/platform/i86pc/amd64/boot_archive';
+var MODULE = '  module /os/%s/platform/i86pc/amd64/boot_archive '
+    + 'type=rootfs name=ramdisk';
 var TITLE_LIVE = 'title Live 64-bit';
 var TITLE_KMDB = 'title Live 64-bit +kmdb';
 var TITLE_RESCUE = 'title Live 64-bit Rescue (no importing zpool)';
 
 var GPXE_START = ['#!gpxe'];
 var GPXE_INITRD =
-    'initrd tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive';
+    'module tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive '
+    + 'type=rootfs name=ramdisk';
 var GPXE_HASH = GPXE_INITRD + '.hash';
 var GPXE_KERNEL =
     'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix' +
@@ -72,6 +74,24 @@ function merge(/* ... */) {
 
 
 
+// --- Setup
+
+
+
+// run before every test
+exports.setUp = function (cb) {
+    mod_mock.register();
+
+    if (!menuLst) {
+        menuLst = require('../lib/menulst');
+    }
+
+    mod_mock.create();
+    return cb();
+};
+
+
+
 // --- Tests
 
 
@@ -97,7 +117,12 @@ exports['defaults'] = function (t) {
     var kArgs = merge(params.kernel_args, conparams);
     var gpxeKArgs = merge(params.kernel_args, gpxe_conparams);
 
-    menuLst.buildMenuLst(params, '/tmp', function (menu) {
+    var fnParams = {
+        bootParams: params,
+        tftpRoot: '/tmp'
+    };
+
+    menuLst.buildMenuLst(fnParams, function (menu) {
         t.deepEqual(menu.split('\n'), MENU_START.concat([
             'variable os_console text',
             'serial --unit=1 --speed=115200 --word=8 --parity=no --stop=1',
@@ -118,7 +143,7 @@ exports['defaults'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
+        menuLst.buildGpxeCfg(fnParams, function (cfg) {
             t.deepEqual(cfg.split('\n'), GPXE_START.concat([
                 format(GPXE_KERNEL, params.platform, '', keyValArgs(gpxeKArgs)),
                 format(GPXE_INITRD, params.platform),
@@ -156,7 +181,12 @@ exports['defaults with kernel flags'] = function (t) {
     var kArgs = merge(params.kernel_args, conparams);
     var gpxeKArgs = merge(params.kernel_args, gpxe_conparams);
 
-    menuLst.buildMenuLst(params, '/tmp', function (menu) {
+    var fnParams = {
+        bootParams: params,
+        tftpRoot: '/tmp'
+    };
+
+    menuLst.buildMenuLst(fnParams, function (menu) {
         t.deepEqual(menu.split('\n'), MENU_START.concat([
             'variable os_console text',
             'serial --unit=1 --speed=115200 --word=8 --parity=no --stop=1',
@@ -180,7 +210,7 @@ exports['defaults with kernel flags'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
+        menuLst.buildGpxeCfg(fnParams, function (cfg) {
             t.deepEqual(cfg.split('\n'), GPXE_START.concat([
                 format(GPXE_KERNEL, params.platform, '-k -m milestone=none -x ',
                        keyValArgs(gpxeKArgs)),
@@ -209,7 +239,12 @@ exports['serial console'] = function (t) {
     };
     var noImportArgs = merge({ noimport: 'true' }, conparams);
 
-    menuLst.buildMenuLst(params, '/tmp', function (menu) {
+    var fnParams = {
+        bootParams: params,
+        tftpRoot: '/tmp'
+    };
+
+    menuLst.buildMenuLst(fnParams, function (menu) {
         t.deepEqual(menu.split('\n'), MENU_START.concat([
             'variable os_console ttya',
             'serial --unit=0 --speed=115200 --word=8 --parity=no --stop=1',
@@ -230,7 +265,7 @@ exports['serial console'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
+        menuLst.buildGpxeCfg(fnParams, function (cfg) {
               t.deepEqual(cfg.split('\n'), GPXE_START.concat([
                   format(GPXE_KERNEL, params.platform, '',
                       keyValArgs(gpxe_conparams)),
@@ -258,7 +293,12 @@ exports['VGA console'] = function (t) {
     };
     var noImportArgs = merge({ noimport: 'true' }, conparams);
 
-    menuLst.buildMenuLst(params, '/tmp', function (menu) {
+    var fnParams = {
+        bootParams: params,
+        tftpRoot: '/tmp'
+    };
+
+    menuLst.buildMenuLst(fnParams, function (menu) {
         t.deepEqual(menu.split('\n'), MENU_START.concat([
             'variable os_console text',
             'color grey/blue black/blue',
@@ -278,7 +318,7 @@ exports['VGA console'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(params, '/tmp', function (cfg) {
+        menuLst.buildGpxeCfg(fnParams, function (cfg) {
             t.deepEqual(cfg.split('\n'), GPXE_START.concat([
                 format(GPXE_KERNEL, params.platform, '',
                     keyValArgs(gpxe_conparams)),

@@ -7,7 +7,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2015, Joyent, Inc.
 #
 
 export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -24,5 +24,10 @@ echo "Importing tftpd manifest"
 
 echo "Enabling tftpd service"
 /usr/sbin/svcadm enable network/tftpd
+
+echo "Importing nginx manifest"
+/usr/sbin/svccfg import /opt/local/share/smf/nginx/manifest.xml
+
+# Leave nginx disabled for now, since we don't enable HTTP booting yet
 
 exit 0
