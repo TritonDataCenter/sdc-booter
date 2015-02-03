@@ -1,21 +1,19 @@
 {
   "napi": {
-    "url": "http://{{{NAPI_SERVICE}}}",
-    "username": "{{{napi_http_admin_user}}}",
-    "password": "{{{napi_http_admin_pw}}}"
+    "url": "http://{{{NAPI_SERVICE}}}"
   },
   "cnapi": {
-    "url": "http://{{{CNAPI_SERVICE}}}",
-    "username": "{{{cnapi_http_admin_user}}}",
-    "password": "{{{cnapi_http_admin_pw}}}"
+    "url": "http://{{{CNAPI_SERVICE}}}"
   },
+{{#dns_domain}}  "dnsDomain": "{{dns_domain}}",{{/dns_domain}}
+{{#http_pxe_boot}}  "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}
   "adminUuid": "{{{ufds_admin_uuid}}}",
   "listenIp": "0.0.0.0",
   "port": 67,
   "tftpRoot": "/tftpboot",
   "defaultGateway": "{{{compute_node_default_gateway}}}",
   "serverIp": "{{{dhcpd_admin_ip}}}",
-  "leaseTime": "{{{dhcp_lease_time}}}",
+  "leaseTime": {{{dhcp_lease_time}}},
   "resolvers": {{{resolvers}}}{{^resolvers}}[]{{/resolvers}},
   "netmask": "{{{admin_netmask}}}"{{#allow_missing_class_id}},
   "allowMissingClassID": true{{/allow_missing_class_id}}

@@ -22,6 +22,7 @@ TOP := $(shell pwd)
 #
 
 NODEUNIT	:= ./node_modules/.bin/nodeunit
+PACK := node_modules/pack/index.js
 
 
 #
@@ -69,18 +70,22 @@ include ./tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 
+
 .PHONY: all
-all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts
+all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts src/node-pack/index.js
 	$(NPM) install
-	cp -r src/node-pack node_modules/pack
 
 $(NODEUNIT): | $(NPM_EXEC)
 	$(NPM) install
 	cp -r src/node-pack node_modules/pack
 
 .PHONY: test
-test: | $(NODEUNIT)
+test:  $(PACK) | $(NODEUNIT)
 	$(NODEUNIT) --reporter=tap test/*.test.js
+
+$(PACK):
+	cp -r src/node-pack node_modules/pack
+
 
 #
 # Packaging targets
