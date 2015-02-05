@@ -28,7 +28,7 @@ var runOne;
 var MENU_START = ['default 0', 'timeout 5', 'min_mem64 1024'];
 var KERNEL =
     '  kernel$ /os/%s/platform/i86pc/kernel/amd64/unix %s-B %s';
-var MODULE = '  module /os/%s/platform/i86pc/amd64/boot_archive '
+var MODULE = '  module$ /os/%s/platform/i86pc/amd64/boot_archive '
     + 'type=rootfs name=ramdisk';
 var TITLE_LIVE = 'title Live 64-bit';
 var TITLE_KMDB = 'title Live 64-bit +kmdb';

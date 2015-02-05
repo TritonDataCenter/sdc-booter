@@ -5,8 +5,12 @@
   "cnapi": {
     "url": "http://{{{CNAPI_SERVICE}}}"
   },
-{{#dns_domain}}  "dnsDomain": "{{dns_domain}}",{{/dns_domain}}
-{{#http_pxe_boot}}  "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}
+  "overlay": {
+    "nicTag": "{{sdc_underlay_tag}}",
+    "portolan": "portolan.{{dns_domain}}"
+  },
+  "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
+  "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}
   "adminUuid": "{{{ufds_admin_uuid}}}",
   "listenIp": "0.0.0.0",
   "port": 67,
