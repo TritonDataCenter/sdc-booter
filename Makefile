@@ -98,6 +98,7 @@ pkg: all
 	mkdir -p $(TFTPBOOT_PKG_DIR)
 	cp $(TOP)/tftpboot/* $(TFTPBOOT_PKG_DIR)
 	cp -PR bin \
+		etc \
 		lib \
 		package.json \
 		node_modules \
