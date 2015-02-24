@@ -6,7 +6,8 @@
     "url": "http://{{{CNAPI_SERVICE}}}"
   },
   "overlay": {
-    "nicTag": "{{sdc_underlay_tag}}",
+    "overlayNicTag": "sdc_overlay",
+    "underlayNicTag": "{{sdc_underlay_tag}}",
     "portolan": "portolan.{{dns_domain}}"
   },
   "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
@@ -22,4 +23,3 @@
   "netmask": "{{{admin_netmask}}}"{{#allow_missing_class_id}},
   "allowMissingClassID": true{{/allow_missing_class_id}}
 }
-
