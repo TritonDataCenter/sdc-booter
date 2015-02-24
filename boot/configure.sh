@@ -25,9 +25,13 @@ echo "Importing tftpd manifest"
 echo "Enabling tftpd service"
 /usr/sbin/svcadm enable network/tftpd
 
+echo "Configuring nginx"
+cp /opt/smartdc/booter/etc/nginx.conf /opt/local/etc/nginx/nginx.conf
+
 echo "Importing nginx manifest"
 /usr/sbin/svccfg import /opt/local/share/smf/nginx/manifest.xml
 
 # Leave nginx disabled for now, since we don't enable HTTP booting yet
+/usr/sbin/svcadm disable network/nginx
 
 exit 0
