@@ -8,7 +8,7 @@
   "overlay": {
     "overlayNicTag": "sdc_overlay",
     "underlayNicTag": "{{sdc_underlay_tag}}",
-    "portolan": "portolan.{{dns_domain}}"
+    "portolan": "portolan.{{{datacenter_name}}}.{{{dns_domain}}}"
   },
   "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
   "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}
