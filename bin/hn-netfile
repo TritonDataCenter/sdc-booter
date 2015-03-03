@@ -1,0 +1,152 @@
+#!/opt/smartdc/booter/node/bin/node
+
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright (c) 2015, Joyent, Inc.
+ */
+
+/*
+ * Generate boot-time net config file for the headnode
+ */
+
+var mod_bootparams = require('../lib/bootparams');
+var mod_common = require('../lib/common');
+var mod_bunyan = require('bunyan');
+var mod_fs = require('fs');
+var mod_net_file = require('../lib/net-file');
+var mod_vasync = require('vasync');
+
+
+
+function loadConfig(opts, callback) {
+    opts.current = 'Loading config file';
+    opts.config = JSON.parse(mod_fs.readFileSync(opts.configFile, 'utf-8'));
+    // Ensure that the clients don't keep the connection open:
+    opts.config.agent = false;
+
+    return callback();
+}
+
+
+function createClients(opts, callback) {
+    opts.current = 'Creating clients';
+    opts.cnapi = mod_bootparams.createCNAPIclient(opts.config);
+    opts.log = mod_bunyan.createLogger({
+        name: 'hn-netfile',
+        level: 'info',
+        serializers: mod_bunyan.stdSerializers
+    });
+    opts.napi = mod_bootparams.createNAPIclient(opts.config);
+
+    var bootOpts = mod_common.bootOpts(opts);
+    for (var b in bootOpts) {
+        opts[b] = bootOpts[b];
+    }
+
+    return callback();
+}
+
+
+function getHeadnodeUUID(opts, callback) {
+    opts.current = 'Getting headonde UUID from CNAPI';
+    opts.cnapi.listServers({ hostname: 'headnode' }, function (err, list) {
+        if (err) {
+            return callback(err);
+        }
+
+        if (!list || list.length === 0) {
+            return callback(new Error(
+                'Could not find a server with hostname "headnode" in CNAPI'));
+        }
+
+        opts.cn_uuid = list[0].uuid;
+
+        if (!opts.cn_uuid) {
+            return callback(new Error(
+                'Could not get headnode UUID from CNAPI'));
+        }
+
+        return callback();
+    });
+}
+
+
+function getNics(opts, callback) {
+    opts.current = 'Getting nics';
+    opts.napi.getNics(opts.cn_uuid, function (err, list) {
+        if (err) {
+            return callback(err);
+        }
+
+        var nic;
+        opts.nics = list;
+
+        for (var n in list) {
+            nic = list[n];
+            if (nic.hasOwnProperty('nic_tags_provided') &&
+                    nic.nic_tags_provided.indexOf('admin') !== -1) {
+                opts.adminNic = nic;
+            }
+        }
+
+        return callback();
+    });
+}
+
+
+function getAggrs(opts, callback) {
+    opts.current = 'Getting aggregations';
+    opts.napi.listAggrs({ belongs_to_uuid: opts.cn_uuid },
+            function (err, list) {
+        if (err) {
+            return callback(err);
+        }
+
+        opts.aggrs = list;
+        return callback();
+    });
+}
+
+
+function genNetFile(opts, callback) {
+    opts.current = 'Generating networking file';
+    opts.netFile = mod_net_file.generate(opts);
+    return callback();
+}
+
+
+function outputNetFile() {
+    var opts = {
+        configFile: __dirname + '/../config.json',
+        hostname: 'headnode'
+    };
+
+    mod_vasync.pipeline({
+        arg: opts,
+        funcs: [
+            loadConfig,
+            createClients,
+            getHeadnodeUUID,
+            getNics,
+            getAggrs,
+            genNetFile
+    ] }, function (err, res) {
+        if (err) {
+            return console.error(opts.current + ': ' + err.message);
+        }
+
+        if (!opts.netFile) {
+            return console.error('No net file generated');
+        }
+
+        return console.log(JSON.stringify(opts.netFile, null, 2));
+    });
+}
+
+
+outputNetFile();

@@ -30,7 +30,7 @@ PACK := node_modules/pack/index.js
 #
 
 BASH_FILES	:= bin/booter bin/dhcpd
-JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js')
+JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js') bin/hn-netfile
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = $(JS_FILES)
 JSON_FILES	:= config.json.sample package.json
