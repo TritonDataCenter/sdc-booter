@@ -5,11 +5,21 @@
   "cnapi": {
     "url": "http://{{{CNAPI_SERVICE}}}"
   },
+{{#fabric_cfg}}
   "overlay": {
-    "overlayNicTag": "sdc_overlay",
-    "underlayNicTag": "{{sdc_underlay_tag}}",
-    "portolan": "portolan.{{{datacenter_name}}}.{{{dns_domain}}}"
+      "enabled": true,
+      "defaultOverlayMTU": {{{default_overlay_mtu}}},
+      "defaultUnderlayMTU": {{{default_underlay_mtu}}},
+      "portolan": "portolan.{{{datacenter_name}}}.{{{dns_domain}}}",
+      "overlayNicTag": "sdc_overlay",
+      "underlayNicTag": "{{{sdc_underlay_tag}}}"
   },
+{{/fabric_cfg}}
+{{^fabric_cfg}}
+  "overlay": {
+      "enabled": false
+  },
+{{/fabric_cfg}}
   "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
   "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}
   "adminUuid": "{{{ufds_admin_uuid}}}",
