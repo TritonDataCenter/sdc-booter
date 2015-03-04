@@ -13,6 +13,7 @@
  */
 
 var assert = require('assert-plus');
+var mod_boot_files;
 var mod_dhcpd;
 var mod_log = require('./log');
 
@@ -30,6 +31,10 @@ var SERVER;
 function createServer() {
     if (SERVER) {
         return;
+    }
+
+    if (!mod_boot_files) {
+        mod_boot_files = require('../../lib/boot-files');
     }
 
     if (!mod_dhcpd) {
@@ -50,9 +55,14 @@ function bootData(opts, callback) {
 
     SERVER.cnapi = opts.cnapi;
     SERVER.napi = opts.napi;
-    opts.log = mod_log.child({ mac: opts.mac });
 
-    SERVER.bootData(opts, callback);
+    mod_boot_files.writeAll({
+        config: serverConfig(),
+        cnapi: opts.cnapi,
+        log: mod_log.child({ mac: opts.mac }),
+        mac: opts.mac,
+        napi: opts.napi
+    }, callback);
 }
 
 
@@ -69,6 +79,14 @@ function serverConfig() {
             url: 'http://fake-napi.coal.joyent.us'
         },
         netmask: '255.255.255.0',
+        overlay: {
+            enabled: true,
+            defaultOverlayMTU: 1400,
+            defaultUnderlayMTU: 1500,
+            portolan: 'portolan.coal.joyent.us',
+            overlayNicTag: 'sdc_overlay',
+            underlayNicTag: 'sdc_underlay'
+        },
         port: 10067,
         resolvers: [],
         serverIp: '10.99.99.9',

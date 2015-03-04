@@ -14,9 +14,9 @@
  * Generate boot-time net config file for the headnode
  */
 
-var mod_bootparams = require('../lib/bootparams');
-var mod_common = require('../lib/common');
+var mod_boot_files = require('../lib/common');
 var mod_bunyan = require('bunyan');
+var mod_clients = require('../lib/clients');
 var mod_fs = require('fs');
 var mod_net_file = require('../lib/net-file');
 var mod_vasync = require('vasync');
@@ -35,15 +35,15 @@ function loadConfig(opts, callback) {
 
 function createClients(opts, callback) {
     opts.current = 'Creating clients';
-    opts.cnapi = mod_bootparams.createCNAPIclient(opts.config);
+    opts.cnapi = mod_clients.createCNAPIclient(opts.config);
     opts.log = mod_bunyan.createLogger({
         name: 'hn-netfile',
         level: 'info',
         serializers: mod_bunyan.stdSerializers
     });
-    opts.napi = mod_bootparams.createNAPIclient(opts.config);
+    opts.napi = mod_clients.createNAPIclient(opts.config);
 
-    var bootOpts = mod_common.bootOpts(opts);
+    var bootOpts = mod_boot_files.bootOpts(opts);
     for (var b in bootOpts) {
         opts[b] = bootOpts[b];
     }
