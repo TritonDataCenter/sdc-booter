@@ -19,6 +19,7 @@
   "overlay": {
       "enabled": false
   },
+  "disableBootTimeFiles": true,
 {{/fabric_cfg}}
   "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
   "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}
