@@ -107,6 +107,11 @@ function error404() {
 }
 
 
+function nicTag(name) {
+    return { res: { name: name, mtu: 1500 } };
+}
+
+
 function getBootParams(opts, callback) {
     var bootParams = {
         napi: mocks.napi,
@@ -166,6 +171,7 @@ exports['new CN boots'] = function (t) {
 
     mocks.napi.VALUES = {
         getNic: [ { err: error404() } ],
+        getNicTag: [ nicTag('admin') ],
         listAggrs: [ { res: [] } ],
         provisionNic: [ { res: newNic } ]
     };
@@ -209,7 +215,7 @@ exports['new CN boots'] = function (t) {
         t.deepEqual(mod_file.netConfig(newNic.mac), {
             aggregations: [],
             nictags: [
-                { name: 'admin', mac: newNic.mac }
+                { name: 'admin', mac: newNic.mac, mtu: 1500 }
             ],
             resolvers: newNic.resolvers,
             routes: {},
@@ -230,6 +236,7 @@ exports['existing CN boots'] = function (t) {
     mocks.napi.VALUES = {
         getNic: [ { res: serverNics[1] } ],
         getNics: [ { res: serverNics } ],
+        getNicTag: [ nicTag('admin'), nicTag('external') ],
         listAggrs: [ { res: [] } ]
     };
 
@@ -264,8 +271,8 @@ exports['existing CN boots'] = function (t) {
             aggregations: [],
             hostname: CN1_BOOT_PARAMS.kernel_args.hostname,
             nictags: [
-                { name: 'admin', mac: serverNics[1].mac },
-                { name: 'external', mac: serverNics[0].mac }
+                { name: 'admin', mac: serverNics[1].mac, mtu: 1500 },
+                { name: 'external', mac: serverNics[0].mac, mtu: 1500 }
             ],
             resolvers: serverNics[1].resolvers.concat(serverNics[0].resolvers),
             routes: {},
@@ -286,6 +293,7 @@ exports['existing CN boots: no bootparams'] = function (t) {
     mocks.napi.VALUES = {
         getNic: [ { res: serverNics[1] } ],
         getNics: [ { res: serverNics } ],
+        getNicTag: [ nicTag('admin'), nicTag('external') ],
         listAggrs: [ { res: [] } ]
     };
 
@@ -320,8 +328,8 @@ exports['existing CN boots: no bootparams'] = function (t) {
             aggregations: [],
             // hostname comes from boot params, so it's not included
             nictags: [
-                { name: 'admin', mac: serverNics[1].mac },
-                { name: 'external', mac: serverNics[0].mac }
+                { name: 'admin', mac: serverNics[1].mac, mtu: 1500 },
+                { name: 'external', mac: serverNics[0].mac, mtu: 1500 }
             ],
             resolvers: serverNics[1].resolvers.concat(serverNics[0].resolvers),
             routes: {},
@@ -342,6 +350,7 @@ exports['existing CN boots: no bootparams'] = function (t) {
  * have admin be a 10g.
  */
 exports['admin nic different than booting nic'] = function (t) {
+    var desc = ': admin nic != booting nic';
     var serverNics = clone(CN1_NICS);
     serverNics[0].nic_tags_provided = [ 'admin' ];
     delete serverNics[1].nic_tags_provided;
@@ -349,6 +358,7 @@ exports['admin nic different than booting nic'] = function (t) {
     mocks.napi.VALUES = {
         getNic: [ { res: serverNics[1] } ],
         getNics: [ { res: serverNics } ],
+        getNicTag: [ nicTag('admin'), nicTag('external') ],
         listAggrs: [ { res: [] } ]
     };
 
@@ -373,13 +383,14 @@ exports['admin nic different than booting nic'] = function (t) {
         expParams.resolvers = serverNics[1].resolvers;
 
         t.deepEqual(res.bootParams, expParams,
-            'boot params: admin nic != booting nic');
+            'boot params' + desc);
 
         t.deepEqual(mod_file.netConfig(serverNics[1].mac), {
             aggregations: [],
             hostname: CN1_BOOT_PARAMS.kernel_args.hostname,
             nictags: [
-                { name: 'admin', mac: serverNics[0].mac }
+                { name: 'admin', mac: serverNics[0].mac, mtu: 1500 },
+                { name: 'external', mtu: 1500 }
             ],
             resolvers: serverNics[0].resolvers.concat(serverNics[1].resolvers),
             routes: {},
@@ -387,7 +398,7 @@ exports['admin nic different than booting nic'] = function (t) {
                 serverNics[0],
                 serverNics[1]
             ]
-        }, 'network boot-time file written correctly');
+        }, 'network boot-time file' + desc);
 
         return t.done();
     });
@@ -413,6 +424,12 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
             { res: serverNics },
             { err: new restify.RestError({ message: 'connect ECONNREFUSED' }) }
         ],
+        getNicTag: [
+            nicTag('admin'), nicTag('external'),
+            // not called 2nd time: error from napi.getNic() prevents this
+            nicTag('admin'), nicTag('external'),
+            nicTag('admin'), nicTag('external')
+        ],
         listAggrs: [
             { res: [] },
             { res: [] }
@@ -433,8 +450,8 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
         aggregations: [],
         hostname: bootParams.kernel_args.hostname,
         nictags: [
-            { name: 'admin', mac: serverNics[1].mac },
-            { name: 'external', mac: serverNics[0].mac }
+            { name: 'admin', mac: serverNics[1].mac, mtu: 1500 },
+            { name: 'external', mac: serverNics[0].mac, mtu: 1500 }
         ],
         resolvers: serverNics[1].resolvers.concat(serverNics[0].resolvers),
         routes: {},
@@ -569,6 +586,9 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
         getNics: [
             { res: serverNics }
         ],
+        getNicTag: [
+            nicTag('admin'), nicTag('external')
+        ],
         listAggrs: [ { res: [] } ]
     };
 
@@ -583,8 +603,8 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
         aggregations: [],
         hostname: CN1_BOOT_PARAMS.kernel_args.hostname,
         nictags: [
-            { name: 'admin', mac: serverNics[1].mac },
-            { name: 'external', mac: serverNics[0].mac }
+            { name: 'admin', mac: serverNics[1].mac, mtu: 1500 },
+            { name: 'external', mac: serverNics[0].mac, mtu: 1500 }
         ],
         resolvers: serverNics[1].resolvers.concat(serverNics[0].resolvers),
         routes: {},
@@ -665,6 +685,9 @@ exports['invalid JSON in cache file'] = function (t) {
         getNics: [
             { res: serverNics }
         ],
+        getNicTag: [
+            nicTag('admin'), nicTag('external')
+        ],
         listAggrs: [ { res: [] } ]
     };
 
@@ -706,7 +729,7 @@ exports['aggregation'] = function (t) {
         lacp_mode: 'passive',
         macs: [ serverNics[0].mac, serverNics[1].mac ],
         name: 'aggr0',
-        nic_tags_provided: [ 'admin', 'external' ]
+        nic_tags_provided: [ 'admin', 'external', 'foo' ]
     };
 
     mocks.napi.VALUES = {
@@ -717,6 +740,10 @@ exports['aggregation'] = function (t) {
         getNics: [
             { res: serverNics },
             { res: serverNics }
+        ],
+        getNicTag: [
+            nicTag('admin'), nicTag('external'), nicTag('foo'),
+            nicTag('admin'), nicTag('external'), nicTag('foo')
         ],
         listAggrs: [
             { res: [ aggr ] },
@@ -741,6 +768,7 @@ exports['aggregation'] = function (t) {
 
         expParams.kernel_args.admin_nic = 'aggr0';
         expParams.kernel_args.external_nic = 'aggr0';
+        expParams.kernel_args.foo_nic = 'aggr0';
         expParams.kernel_args.aggr0_lacp_mode = 'passive';
         expParams.kernel_args.aggr0_aggr = util.format(
             '\"%s\"', aggr.macs.join(','));
@@ -768,8 +796,9 @@ exports['aggregation'] = function (t) {
             ],
             hostname: CN1_BOOT_PARAMS.kernel_args.hostname,
             nictags: [
-                { name: 'admin', mac: serverNics[1].mac },
-                { name: 'external', mac: serverNics[0].mac }
+                { name: 'admin', mac: 'aggr0', mtu: 1500 },
+                { name: 'external', mac: 'aggr0', mtu: 1500 },
+                { name: 'foo', mac: 'aggr0', mtu: 1500 }
             ],
             resolvers: serverNics[1].resolvers.concat(serverNics[0].resolvers),
             routes: {},
@@ -793,8 +822,9 @@ exports['aggregation'] = function (t) {
                 ],
                 hostname: CN1_BOOT_PARAMS.kernel_args.hostname,
                 nictags: [
-                    { name: 'admin', mac: serverNics[1].mac },
-                    { name: 'external', mac: serverNics[0].mac }
+                    { name: 'admin', mac: 'aggr0', mtu: 1500 },
+                    { name: 'external', mac: 'aggr0', mtu: 1500 },
+                    { name: 'foo', mac: 'aggr0', mtu: 1500 }
                 ],
                 resolvers: serverNics[1].resolvers.concat(
                     serverNics[0].resolvers),

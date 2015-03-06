@@ -14,7 +14,7 @@
  * Generate boot-time net config file for the headnode
  */
 
-var mod_boot_files = require('../lib/common');
+var mod_boot_files = require('../lib/boot-files');
 var mod_bunyan = require('bunyan');
 var mod_clients = require('../lib/clients');
 var mod_fs = require('fs');
@@ -99,20 +99,6 @@ function getNics(opts, callback) {
 }
 
 
-function getAggrs(opts, callback) {
-    opts.current = 'Getting aggregations';
-    opts.napi.listAggrs({ belongs_to_uuid: opts.cn_uuid },
-            function (err, list) {
-        if (err) {
-            return callback(err);
-        }
-
-        opts.aggrs = list;
-        return callback();
-    });
-}
-
-
 function genNetFile(opts, callback) {
     opts.current = 'Generating networking file';
     opts.netFile = mod_net_file.generate(opts);
@@ -133,7 +119,8 @@ function outputNetFile() {
             createClients,
             getHeadnodeUUID,
             getNics,
-            getAggrs,
+            mod_clients.napiGetAggrs,
+            mod_clients.napiGetNicTags,
             genNetFile
     ] }, function (err, res) {
         if (err) {

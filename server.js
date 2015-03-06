@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 /*
@@ -14,15 +14,13 @@
 
 var bunyan = require('bunyan');
 var dhcpd = require('./lib/dhcpd');
+var stdSerializers = require('sdc-bunyan-serializers');
 
 
 var log = bunyan.createLogger({
     name: 'dhcpd',
     level: 'debug',
-    serializers: {
-        err: bunyan.stdSerializers.err,
-        req: bunyan.stdSerializers.req
-    }
+    serializers: stdSerializers.serializers
 });
 
 try {

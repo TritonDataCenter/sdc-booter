@@ -136,6 +136,10 @@ function createMocks() {
         return this._handle('getNics', { uuid: uuid }, cb);
     };
 
+    mocks.napi.getNicTag = function (tag, cb) {
+        return this._handle('getNicTag', { name: tag }, cb);
+    };
+
     mocks.napi.listAggrs = function (params, cb) {
         return this._handle('listAggrs', { params: params }, cb);
     };
