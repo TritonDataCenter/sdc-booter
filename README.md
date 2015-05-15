@@ -63,3 +63,25 @@ To run all tests:
 To run a single test:
 
     ./node_modules/.bin/nodeunit --reporter=tap <test>
+
+
+# Configuration
+
+Booter supports a few SAPI configuration values:
+
+- `http_pxe_boot`: if set to `true`, allow iPXE clients to pull down their
+  files via HTTP rather than TFTP
+- `compute_node_default_gateway`: set this to give Compute Nodess a
+  default gateway
+- `dhcp_lease_time`: DHCP lease time for Compute Nodes
+- `allow_missing_class_id`: booter only allows clients with class identifiers
+  of "PXEClient" and "SUNW" to obtain IP addresses.  This allows clients with
+  a missing class ID to also get IPs (useful for mock cloud testing).
+
+
+To update any of the above values, use the SAPI tools.  For example, in the
+Global Zone:
+
+    dhcpd_svc=$(sdc-sapi /services?name=dhcpd | json -Ha uuid)
+    sapiadm update $dhcpd_svc metadata.http_pxe_boot=true
+
