@@ -127,9 +127,9 @@ $(RELEASE_TARBALL): pkg
 
 publish:
 	@if [[ -z "$(BITS_DIR)" ]]; then \
-      echo "error: 'BITS_DIR' must be set for 'publish' target"; \
-      exit 1; \
-    fi
+		echo "error: 'BITS_DIR' must be set for 'publish' target"; \
+		exit 1; \
+	fi
 	mkdir -p $(BITS_DIR)/dhcpd
 	cp $(RELEASE_TARBALL) $(BITS_DIR)/dhcpd/$(RELEASE_TARBALL)
 

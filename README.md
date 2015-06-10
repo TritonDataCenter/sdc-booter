@@ -77,6 +77,10 @@ Booter supports a few SAPI configuration values:
 - `allow_missing_class_id`: booter only allows clients with class identifiers
   of "PXEClient" and "SUNW" to obtain IP addresses.  This allows clients with
   a missing class ID to also get IPs (useful for mock cloud testing).
+- `chainload_grub`: In the past, the `"pxegrub"` boot loader was sent to PXE
+  clients booting from the ROM of a network card.  If your system has trouble
+  with the iPXE binary (`"undionly.kpxe"`) we now send to servers, you can
+  revert to the legacy grub loader by setting this option to `true`.
 
 
 To update any of the above values, use the SAPI tools.  For example, in the

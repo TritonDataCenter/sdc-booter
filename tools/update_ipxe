@@ -1,0 +1,64 @@
+#!/bin/ksh
+#
+# For rather unforunate reasons related to inter-repository dependencies, we
+# ship a copy of "pxegrub" from the platform boot tarball, and "undionly.kpxe"
+# (iPXE) from the "sdcboot" tarball.
+#
+# This tool may be run to download the iPXE binary from the latest build of the
+# master branch of the "sdcboot" repository into the correct place in this
+# repository.
+#
+
+#
+# The file we want; i.e. the iPXE UNDI chainloading PXE boot binary
+#
+IPXEFILE='./boot/undionly.kpxe'
+
+set -o errexit
+set -o pipefail
+
+tdir=
+dir="$(dirname $(whence $0))/.."
+cd "${dir}"
+
+function fatal {
+	printf 'ERROR: %s\n' >&2
+	if [[ -n "${tdir}" && -d "${tdir}" ]]; then
+		# Clean up temporary directory
+		rm -rf "${tdir}"
+	fi
+	exit 1
+}
+
+if ! mdir="$(mget -q /Joyent_Dev/public/builds/sdcboot/master-latest)"; then
+	fatal 'could not locate latest "sdcboot" build directory in Manta'
+fi
+
+printf '%15s: %s\n' 'Manta Dir' "${mdir}" >&2
+
+if ! mfile="$(mfind -t o -n "^sdcboot-master-.*.tgz$" "${mdir}")"; then
+	fatal 'could not locate latest "sdcboot" build tarball in Manta'
+fi
+
+printf '%15s: %s\n' 'Manta File' "${mfile}" >&2
+
+if ! tdir="$(/usr/bin/mktemp -d)"; then
+	fatal 'could not make temporary directory'
+fi
+
+printf '%15s: %s\n' 'Temp Dir' "${mfile}" >&2
+cd "${tdir}"
+
+if ! mget -o sdcboot.tgz "${mfile}"; then
+	fatal 'could not download "sdcboot" build tarball'
+fi
+
+if ! tar xvzf sdcboot.tgz "${IPXEFILE}"; then
+	fatal 'could not extract iPXE binary from "sdcboot" tarball'
+fi
+
+mv "${IPXEFILE}" "${dir}/tftpboot/"
+cd /
+rm -rf "${tdir}"
+
+printf 'ok\n' >&2
