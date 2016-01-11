@@ -31,7 +31,7 @@ cp /opt/smartdc/booter/etc/nginx.conf /opt/local/etc/nginx/nginx.conf
 echo "Importing nginx manifest"
 /usr/sbin/svccfg import /opt/local/share/smf/nginx/manifest.xml
 
-# Leave nginx disabled for now, since we don't enable HTTP booting yet
-/usr/sbin/svcadm disable network/nginx
+echo "Enabling nginx service"
+/usr/sbin/svcadm enable network/nginx
 
 exit 0
