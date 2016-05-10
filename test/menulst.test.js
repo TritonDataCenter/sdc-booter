@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright 2016 Joyent, Inc.
  */
 
 /*
@@ -34,12 +34,12 @@ var TITLE_LIVE = 'title Live 64-bit';
 var TITLE_KMDB = 'title Live 64-bit +kmdb';
 var TITLE_RESCUE = 'title Live 64-bit Rescue (no importing zpool)';
 
-var GPXE_START = ['#!gpxe'];
-var GPXE_INITRD =
+var IPXE_START = ['#!ipxe'];
+var IPXE_INITRD =
     'module tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive '
     + 'type=rootfs name=ramdisk';
-var GPXE_HASH = GPXE_INITRD + '.hash';
-var GPXE_KERNEL =
+var IPXE_HASH = IPXE_INITRD + '.hash';
+var IPXE_KERNEL =
     'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix' +
     ' %s-B %s';
 
@@ -107,7 +107,7 @@ exports['defaults'] = function (t) {
         console: '${os_console}',
         '${os_console}-mode': '"115200,8,n,1,-"'
     };
-    var gpxe_conparams = {
+    var ipxe_conparams = {
         console: 'text',
         'text-mode': '"115200,8,n,1,-"'
     };
@@ -115,7 +115,7 @@ exports['defaults'] = function (t) {
     var noImportArgs = merge(params.kernel_args, { noimport: 'true' },
         conparams);
     var kArgs = merge(params.kernel_args, conparams);
-    var gpxeKArgs = merge(params.kernel_args, gpxe_conparams);
+    var ipxeKArgs = merge(params.kernel_args, ipxe_conparams);
 
     var fnParams = {
         bootParams: params,
@@ -143,12 +143,12 @@ exports['defaults'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(fnParams, function (cfg) {
-            t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                format(GPXE_KERNEL, params.platform, '', keyValArgs(gpxeKArgs)),
-                format(GPXE_INITRD, params.platform),
+        menuLst.buildIpxeCfg(fnParams, function (cfg) {
+            t.deepEqual(cfg.split('\n'), IPXE_START.concat([
+                format(IPXE_KERNEL, params.platform, '', keyValArgs(ipxeKArgs)),
+                format(IPXE_INITRD, params.platform),
                 'boot'
-            ]), 'boot.gpxe');
+            ]), 'boot.ipxe');
             t.done();
         });
     });
@@ -171,7 +171,7 @@ exports['defaults with kernel flags'] = function (t) {
         console: '${os_console}',
         '${os_console}-mode': '"115200,8,n,1,-"'
     };
-    var gpxe_conparams = {
+    var ipxe_conparams = {
         console: 'text',
         'text-mode': '"115200,8,n,1,-"'
     };
@@ -179,7 +179,7 @@ exports['defaults with kernel flags'] = function (t) {
     var noImportArgs = merge(params.kernel_args, { noimport: 'true' },
         conparams);
     var kArgs = merge(params.kernel_args, conparams);
-    var gpxeKArgs = merge(params.kernel_args, gpxe_conparams);
+    var ipxeKArgs = merge(params.kernel_args, ipxe_conparams);
 
     var fnParams = {
         bootParams: params,
@@ -210,13 +210,13 @@ exports['defaults with kernel flags'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(fnParams, function (cfg) {
-            t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                format(GPXE_KERNEL, params.platform, '-k -m milestone=none -x ',
-                       keyValArgs(gpxeKArgs)),
-                format(GPXE_INITRD, params.platform),
+        menuLst.buildIpxeCfg(fnParams, function (cfg) {
+            t.deepEqual(cfg.split('\n'), IPXE_START.concat([
+                format(IPXE_KERNEL, params.platform, '-k -m milestone=none -x ',
+                       keyValArgs(ipxeKArgs)),
+                format(IPXE_INITRD, params.platform),
                 'boot'
-            ]), 'boot.gpxe');
+            ]), 'boot.ipxe');
             t.done();
         });
     });
@@ -233,7 +233,7 @@ exports['serial console'] = function (t) {
         console: '${os_console}',
         '${os_console}-mode': '"115200,8,n,1,-"'
     };
-    var gpxe_conparams = {
+    var ipxe_conparams = {
         console: 'ttya',
         'ttya-mode': '"115200,8,n,1,-"'
     };
@@ -265,13 +265,13 @@ exports['serial console'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(fnParams, function (cfg) {
-              t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                  format(GPXE_KERNEL, params.platform, '',
-                      keyValArgs(gpxe_conparams)),
-                  format(GPXE_INITRD, params.platform),
+        menuLst.buildIpxeCfg(fnParams, function (cfg) {
+              t.deepEqual(cfg.split('\n'), IPXE_START.concat([
+                  format(IPXE_KERNEL, params.platform, '',
+                      keyValArgs(ipxe_conparams)),
+                  format(IPXE_INITRD, params.platform),
                   'boot'
-              ]), 'boot.gpxe');
+              ]), 'boot.ipxe');
               t.done();
         });
     });
@@ -287,7 +287,7 @@ exports['VGA console'] = function (t) {
         console: '${os_console}',
         '${os_console}-mode': '"115200,8,n,1,-"'
     };
-    var gpxe_conparams = {
+    var ipxe_conparams = {
         console: 'text',
         'text-mode': '"115200,8,n,1,-"'
     };
@@ -318,13 +318,13 @@ exports['VGA console'] = function (t) {
             ''
         ]), 'menu.lst');
 
-        menuLst.buildGpxeCfg(fnParams, function (cfg) {
-            t.deepEqual(cfg.split('\n'), GPXE_START.concat([
-                format(GPXE_KERNEL, params.platform, '',
-                    keyValArgs(gpxe_conparams)),
-                format(GPXE_INITRD, params.platform),
+        menuLst.buildIpxeCfg(fnParams, function (cfg) {
+            t.deepEqual(cfg.split('\n'), IPXE_START.concat([
+                format(IPXE_KERNEL, params.platform, '',
+                    keyValArgs(ipxe_conparams)),
+                format(IPXE_INITRD, params.platform),
                 'boot'
-            ]), 'boot.gpxe');
+            ]), 'boot.ipxe');
             t.done();
         });
     });
