@@ -7,17 +7,33 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright 2016 Joyent, Inc.
 #
 
 export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o xtrace
+set -o errexit
 
 CONFIG_AGENT_LOCAL_MANIFESTS_DIRS=/opt/smartdc/booter
 
 # Include common utility functions (then run the boilerplate)
 source /opt/smartdc/boot/lib/util.sh
 sdc_common_setup
+
+# Setup our delegate dataset at '/data'.
+#
+# Use the '/data/tftpboot' subtree for the TFTP boot dir at '/tftpboot'.
+# Usage of '/tftpboot' is already baked (e.g. in the dhcpd service
+# 'params.filesystems'), but it is nice to use '/data' for the delegate dataset
+# base to allow other things on it and to follow the same pattern in other
+# Triton core services.
+zfs set mountpoint=/data zones/$(zonename)/data
+mkdir -p /data/tftpboot
+ln -s /data/tftpboot /tftpboot
+# Some parts of /tftpboot are provided by the image. Link those in:
+ls -1 /opt/smartdc/booter/tftpboot/ | while read f; do
+    ln -s /opt/smartdc/booter/tftpboot/$f /tftpboot/$f;
+done
 
 # Cookie to identify this as a SmartDC zone and its role
 mkdir -p /var/smartdc/dhcpd

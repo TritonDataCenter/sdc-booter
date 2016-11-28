@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright 2016 Joyent, Inc.
 #
 
 NAME=dhcpd
@@ -38,7 +38,6 @@ JSSTYLE_FILES	 = $(JS_FILES)
 SMF_MANIFESTS_IN = smf/manifests/dhcpd.xml.in smf/manifests/tftpd.xml.in
 PKG_DIR = $(BUILD)/pkg
 BOOTER_PKG_DIR = $(PKG_DIR)/root/opt/smartdc/booter
-TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
 RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.bz2
 CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
 REPO_MODULES := src/node-pack
@@ -95,8 +94,6 @@ $(PACK):
 pkg: all
 	rm -rf $(PKG_DIR)
 	mkdir -p $(BOOTER_PKG_DIR)/smf/manifests
-	mkdir -p $(TFTPBOOT_PKG_DIR)
-	cp $(TOP)/tftpboot/* $(TFTPBOOT_PKG_DIR)
 	cp -PR bin \
 		etc \
 		lib \
@@ -104,6 +101,7 @@ pkg: all
 		node_modules \
 		server.js \
 		sapi_manifests \
+		tftpboot \
 		$(BOOTER_PKG_DIR)
 	cp smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
 	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
