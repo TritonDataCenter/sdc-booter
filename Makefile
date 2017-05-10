@@ -44,7 +44,7 @@ CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
 REPO_MODULES := src/node-pack
 JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 
-NODE_PREBUILT_VERSION=v0.10.32
+NODE_PREBUILT_VERSION=v0.10.48
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
 	# This is sdc-minimal-multiarch-lts@15.4.1, compat with
