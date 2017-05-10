@@ -47,7 +47,9 @@ JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 NODE_PREBUILT_VERSION=v0.10.32
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
-	NODE_PREBUILT_IMAGE=de411e86-548d-11e4-a4b7-3bb60478632a
+	# This is sdc-minimal-multiarch-lts@15.4.1, compat with
+	# triton-origin-multiarch-15.4.1.
+	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
 endif
 
 
