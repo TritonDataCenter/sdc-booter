@@ -7,11 +7,12 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /*
- * Generate boot-time net config file for the given headnode.
+ * Generate boot-time net config (i.e. for /mnt/usbkey/boot/networking.json)
+ * for the given headnode.
  */
 
 var mod_assert = require('assert-plus');
@@ -92,7 +93,7 @@ function ensureHeadnodeHostnameOrUuid(opts, callback) {
             function (err, stdout, stderr) {
         if (err) {
             callback(new Error(format(
-                'Error calling mdata-get: %s stdout="%s" stderr="%s"',
+                'Error calling mdata-get: %s stdout=%j stderr=%j',
                 err, stdout, stderr)));
             return;
         }
@@ -155,6 +156,7 @@ function getHeadnodeInfo(opts, callback) {
 
 
 function getNics(opts, callback) {
+    log.debug({cn_uuid: opts.cn_uuid}, 'getNics');
     opts.napi.getNics(opts.cn_uuid, function (err, list) {
         if (err) {
             return callback(err);
@@ -177,7 +179,6 @@ function getNics(opts, callback) {
 
 
 function genNetFile(opts, callback) {
-    log.debug({opts: opts}, 'genNetFile');
     opts.netFile = mod_net_file.generate(opts);
     return callback();
 }
