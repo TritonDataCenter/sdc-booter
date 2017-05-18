@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright 2017 Joyent, Inc.
+#
+
+#
+# Rsync this working copy to the install on the given HN.
+#
+
+#set -o xtrace
+set -o errexit
+
+TOP=$(cd $(dirname $0)/../; pwd)
+NODE=$1
+
+if [[ -z "$ZONE" ]]; then
+    ZONE=$(ssh $NODE "vmadm lookup -1 alias=dhcpd0" 2>/dev/null)
+fi
+echo "ZONE: $ZONE"
+
+extraOpts=
+if [[ $(uname -s) != "SunOS" ]]; then
+    extraOpts="--exclude *.node --exclude build"
+fi
+
+rsync -av ${TOP}/ \
+    $NODE:/zones/$ZONE/root/opt/smartdc/booter/ \
+    $extraOpts \
+    --exclude .git/ \
+    --exclude /deps/ \
+    --exclude /boot/ \
+    --exclude /src/ \
+    --exclude /tmp/
+
+state=$(ssh ${NODE} svcs -z ${ZONE} -H -o state dhcpd)
+if [[ "$state" == "maintenance" ]]; then
+    ssh ${NODE} svcadm -z ${ZONE} clear dhcpd
+else
+    ssh ${NODE} svcadm -z ${ZONE} restart dhcpd
+fi
+ssh ${NODE} svcadm -z ${ZONE} restart config-agent

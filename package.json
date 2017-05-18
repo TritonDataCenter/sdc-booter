@@ -1,18 +1,19 @@
 {
   "name": "booter",
   "description": "DHCP server for booting SDC compute nodes",
-  "version": "1.1.0",
+  "version": "1.3.0",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
     "assert-plus": "0.1.2",
-    "bunyan": "1.2.3",
+    "bunyan": "1.8.8",
+    "dashdash": "1.14.1",
     "findit": "2.0.0",
     "mkdirp": "0.5.0",
     "node-uuid": "1.2.0",
     "restify": "2.8.4",
-    "sdc-clients": "git+ssh://git@github.com/joyent/node-sdc-clients.git#0aea3cf",
-    "sdc-bunyan-serializers": "git+ssh://git@github.com:joyent/sdc-bunyan-serializers.git#5454ae4",
+    "sdc-clients": "git+https://github.com/joyent/node-sdc-clients.git#0aea3cf",
+    "sdc-bunyan-serializers": "git+https://github.com/joyent/sdc-bunyan-serializers.git#5454ae4",
     "sprintf": "0.1.0",
     "vasync": "1.6.2"
   },

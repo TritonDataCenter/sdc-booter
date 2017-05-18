@@ -1,4 +1,4 @@
-#!/opt/smartdc/booter/node/bin/node
+#!/opt/smartdc/booter/node/bin/node --abort-on-uncaught-exception
 
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,24 +7,57 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /*
- * Generate boot-time net config file for the headnode
+ * Generate boot-time net config (i.e. for /mnt/usbkey/boot/networking.json)
+ * for the given headnode.
  */
 
+var mod_assert = require('assert-plus');
 var mod_boot_files = require('../lib/boot-files');
 var mod_bunyan = require('bunyan');
+var mod_child_process = require('child_process');
 var mod_clients = require('../lib/clients');
+var mod_dashdash = require('dashdash');
 var mod_fs = require('fs');
 var mod_net_file = require('../lib/net-file');
+var mod_restify = require('restify');
+var mod_util = require('util');
 var mod_vasync = require('vasync');
 
 
+// ---- globals
+
+var NAME = 'hn-netfile';
+var OPTIONS = [
+    {
+        names: ['verbose', 'v'],
+        type: 'bool',
+        help: 'Verbose output.'
+    },
+    {
+        names: ['help', 'h'],
+        type: 'bool',
+        help: 'Print this help and exit.'
+    }
+];
+
+var log = mod_bunyan.createLogger({
+    name: NAME,
+    level: 'info',
+    serializers: mod_restify.bunyan.serializers,
+    streams: [ { stream: process.stderr } ]
+});
+
+var format = mod_util.format;
+var execFile = mod_child_process.execFile;
+
+
+// ---- support functions
 
 function loadConfig(opts, callback) {
-    opts.current = 'Loading config file';
     opts.config = JSON.parse(mod_fs.readFileSync(opts.configFile, 'utf-8'));
     // Ensure that the clients don't keep the connection open:
     opts.config.agent = false;
@@ -34,14 +67,8 @@ function loadConfig(opts, callback) {
 
 
 function createClients(opts, callback) {
-    opts.current = 'Creating clients';
-    opts.cnapi = mod_clients.createCNAPIclient(opts.config);
-    opts.log = mod_bunyan.createLogger({
-        name: 'hn-netfile',
-        level: 'info',
-        serializers: mod_bunyan.stdSerializers
-    });
-    opts.napi = mod_clients.createNAPIclient(opts.config);
+    opts.cnapi = mod_clients.createCNAPIclient(opts.config, opts.log);
+    opts.napi = mod_clients.createNAPIclient(opts.config, opts.log);
 
     var bootOpts = mod_boot_files.bootOpts(opts);
     for (var b in bootOpts) {
@@ -52,32 +79,84 @@ function createClients(opts, callback) {
 }
 
 
-function getHeadnodeUUID(opts, callback) {
-    opts.current = 'Getting headonde UUID from CNAPI';
-    opts.cnapi.listServers({ hostname: 'headnode' }, function (err, list) {
+/*
+ * If a headnode (hostname or UUID) was not given on the command line, then
+ * we want to get the current server UUID (via `mdata-get sdc:server_uuid`).
+ */
+function ensureHeadnodeHostnameOrUuid(opts, callback) {
+    if (opts.headnodeHostnameOrUuid) {
+        callback();
+        return;
+    }
+
+    execFile('/usr/sbin/mdata-get', ['sdc:server_uuid'],
+            function (err, stdout, stderr) {
         if (err) {
-            return callback(err);
+            callback(new Error(format(
+                'Error calling mdata-get: %s stdout=%j stderr=%j',
+                err, stdout, stderr)));
+            return;
         }
 
-        if (!list || list.length === 0) {
-            return callback(new Error(
-                'Could not find a server with hostname "headnode" in CNAPI'));
+        var serverUuid = stdout.trim();
+        if (!serverUuid) {
+            callback(new Error(
+                'mdata-get did not return a value for serverUuid'));
+            return;
         }
 
-        opts.cn_uuid = list[0].uuid;
+        log.debug({uuid: serverUuid}, 'Current server UUID from mdata-get');
+        opts.headnodeHostnameOrUuid = serverUuid;
 
-        if (!opts.cn_uuid) {
-            return callback(new Error(
-                'Could not get headnode UUID from CNAPI'));
+        callback();
+    });
+}
+
+function getHeadnodeInfo(opts, callback) {
+    mod_assert.string(opts.headnodeHostnameOrUuid,
+        'opts.headnodeHostnameOrUuid');
+
+    var i;
+
+    opts.cnapi.listServers({headnode: true}, function (err, headnodes) {
+        if (err) {
+            callback(err);
+            return;
         }
 
-        return callback();
+        // Try `uuid` match first ...
+        var headnode;
+        for (i = 0; i < headnodes.length; i++) {
+            if (headnodes[i].uuid === opts.headnodeHostnameOrUuid) {
+                headnode = headnodes[i];
+                break;
+            }
+        }
+
+        // ... then `hostname`.
+        if (!headnode) {
+            for (i = 0; i < headnodes.length; i++) {
+                if (headnodes[i].hostname === opts.headnodeHostnameOrUuid) {
+                    headnode = headnodes[i];
+                    break;
+                }
+            }
+        }
+
+        if (headnode) {
+            opts.cn_uuid = headnode.uuid;
+            opts.hostname = headnode.hostname;
+            callback();
+        } else {
+            callback(new Error('Could not find a headnode=true server "'
+                + opts.headnodeHostnameOrUuid + '" in CNAPI'));
+        }
     });
 }
 
 
 function getNics(opts, callback) {
-    opts.current = 'Getting nics';
+    log.debug({cn_uuid: opts.cn_uuid}, 'getNics');
     opts.napi.getNics(opts.cn_uuid, function (err, list) {
         if (err) {
             return callback(err);
@@ -100,16 +179,19 @@ function getNics(opts, callback) {
 
 
 function genNetFile(opts, callback) {
-    opts.current = 'Generating networking file';
     opts.netFile = mod_net_file.generate(opts);
     return callback();
 }
 
 
-function outputNetFile() {
+/*
+ * Generate and return networking.json file content for the given headnode.
+ */
+function getNetFile(headnodeHostnameOrUuid, callback) {
     var opts = {
+        log: log,
         configFile: __dirname + '/../config.json',
-        hostname: 'headnode'
+        headnodeHostnameOrUuid: headnodeHostnameOrUuid
     };
 
     mod_vasync.pipeline({
@@ -117,23 +199,72 @@ function outputNetFile() {
         funcs: [
             loadConfig,
             createClients,
-            getHeadnodeUUID,
+            ensureHeadnodeHostnameOrUuid,
+            getHeadnodeInfo,
             getNics,
             mod_clients.napiGetAggrs,
             mod_clients.napiGetNicTags,
             genNetFile
-    ] }, function (err, res) {
+    ] }, function (err) {
         if (err) {
-            return console.error(opts.current + ': ' + err.message);
+            callback(err);
+        } else {
+            callback(null, opts.netFile);
         }
-
-        if (!opts.netFile) {
-            return console.error('No net file generated');
-        }
-
-        return console.log(JSON.stringify(opts.netFile, null, 2));
     });
 }
 
 
-outputNetFile();
+// ---- mainline
+
+function main(argv) {
+    mod_assert.arrayOfString(argv, 'argv');
+
+    var parser = mod_dashdash.createParser({options: OPTIONS});
+    try {
+        var opts = parser.parse(argv);
+    } catch (argvErr) {
+        console.error('%s: error: %s', NAME, argvErr.message);
+        process.exit(1);
+    }
+
+    if (opts.verbose) {
+        log.level('trace');
+        log.src = true;
+    }
+
+    if (opts.help) {
+        console.log([
+            'Generate a headnode networking config file.',
+            '',
+            'Usage:',
+            '    %s [OPTIONS] [HEADNODE-HOSTNAME-OR-UUID]',
+            '',
+            'Options:',
+            parser.help().trimRight(),
+            '',
+            'If the HEADNODE-HOSTNAME-OR-UUIR argument is not given, it will',
+            'default to using the current server.'
+        ].join('\n'), argv[1]);
+        process.exit(0);
+    }
+
+    var headnodeHostnameOrUuid = opts._args[0];
+
+    getNetFile(headnodeHostnameOrUuid, function (err, netFile) {
+        if (err) {
+            console.error('%s: error: %s', NAME, err.stack);
+            process.exit(1);
+        } else if (!netFile) {
+            console.error('%s: error: no networking config file was generated',
+                NAME);
+            process.exit(1);
+        } else {
+            console.log(JSON.stringify(netFile, null, 2));
+        }
+    });
+}
+
+if (require.main === module) {
+    main(process.argv);
+}
