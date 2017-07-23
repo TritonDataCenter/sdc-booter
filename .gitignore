@@ -3,3 +3,4 @@
 /deps/node-install
 /smf/manifests/*.xml
 /build
+/make_stamps/

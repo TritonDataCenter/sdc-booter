@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /*
@@ -311,7 +311,6 @@ function registerMocks() {
         'events',
         'findit',
         'node-uuid',
-        'pack',
         'path',
         'sprintf',
         'stream',
@@ -330,7 +329,8 @@ function registerMocks() {
         './find',
         './json-file',
         './menulst',
-        './net-file'
+        './net-file',
+        './thirdparty/pack'
     ].forEach(function (mod) {
         mockery.registerAllowable(mod);
     });
