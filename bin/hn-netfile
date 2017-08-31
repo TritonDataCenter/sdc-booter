@@ -118,37 +118,37 @@ function getHeadnodeInfo(opts, callback) {
 
     var i;
 
-    opts.cnapi.listServers({headnode: true}, function (err, headnodes) {
+    opts.cnapi.listServers(function (err, servers) {
         if (err) {
             callback(err);
             return;
         }
 
         // Try `uuid` match first ...
-        var headnode;
-        for (i = 0; i < headnodes.length; i++) {
-            if (headnodes[i].uuid === opts.headnodeHostnameOrUuid) {
-                headnode = headnodes[i];
+        var server;
+        for (i = 0; i < servers.length; i++) {
+            if (servers[i].uuid === opts.headnodeHostnameOrUuid) {
+                server = servers[i];
                 break;
             }
         }
 
         // ... then `hostname`.
-        if (!headnode) {
-            for (i = 0; i < headnodes.length; i++) {
-                if (headnodes[i].hostname === opts.headnodeHostnameOrUuid) {
-                    headnode = headnodes[i];
+        if (!server) {
+            for (i = 0; i < servers.length; i++) {
+                if (servers[i].hostname === opts.headnodeHostnameOrUuid) {
+                    server = servers[i];
                     break;
                 }
             }
         }
 
-        if (headnode) {
-            opts.cn_uuid = headnode.uuid;
-            opts.hostname = headnode.hostname;
+        if (server) {
+            opts.cn_uuid = server.uuid;
+            opts.hostname = server.hostname;
             callback();
         } else {
-            callback(new Error('Could not find a headnode=true server "'
+            callback(new Error('Could not find server "'
                 + opts.headnodeHostnameOrUuid + '" in CNAPI'));
         }
     });
