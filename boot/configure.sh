@@ -7,17 +7,16 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -o errexit
+set -o pipefail
 set -o xtrace
 
-echo "Importing dhcpd manifest"
+echo "Importing dhcpd manifest (default: enabled)"
 /usr/sbin/svccfg import /opt/smartdc/booter/smf/manifests/dhcpd.xml
-
-echo "Enabling dhcpd service"
-/usr/sbin/svcadm enable smartdc/site/dhcpd
 
 echo "Importing tftpd manifest"
 /usr/sbin/svccfg import /opt/smartdc/booter/smf/manifests/tftpd.xml
@@ -29,9 +28,9 @@ echo "Configuring nginx"
 cp /opt/smartdc/booter/etc/nginx.conf /opt/local/etc/nginx/nginx.conf
 
 echo "Importing nginx manifest"
-/usr/sbin/svccfg import /opt/local/share/smf/nginx/manifest.xml
+/usr/sbin/svccfg import /opt/local/lib/svc/manifest/nginx.xml
 
 echo "Enabling nginx service"
-/usr/sbin/svcadm enable network/nginx
+/usr/sbin/svcadm enable pkgsrc/nginx
 
 exit 0

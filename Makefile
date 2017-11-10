@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 NAME=dhcpd
@@ -47,7 +47,7 @@ JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 NODE_PREBUILT_VERSION=v0.10.48
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
-	NODE_PREBUILT_IMAGE=de411e86-548d-11e4-a4b7-3bb60478632a
+	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
 endif
 
 
