@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2016 Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 /*
@@ -15,16 +15,13 @@
 var format = require('util').format;
 var menuLst;
 var mod_mock = require('./lib/mocks');
-
+var test = require('tape');
 
 
 // --- Globals
 
 
 
-// Set this to any of the exports in this file to only run that test,
-// plus setup and teardown
-var runOne;
 var MENU_START = ['default 0', 'timeout 5', 'min_mem64 1024'];
 var KERNEL =
     '  kernel$ /os/%s/platform/i86pc/kernel/amd64/unix %s-B %s';
@@ -78,25 +75,19 @@ function merge(/* ... */) {
 
 
 
-// run before every test
-exports.setUp = function (cb) {
+function setUpMocks() {
     mod_mock.register();
 
-    if (!menuLst) {
-        menuLst = require('../lib/menulst');
-    }
-
-    mod_mock.create();
-    return cb();
-};
-
+    menuLst = require('../lib/menulst');
+    return  mod_mock.create();
+}
 
 
 // --- Tests
 
 
-
-exports['defaults'] = function (t) {
+test('defaults', function (t) {
+    setUpMocks();
     var params = {
         platform: 'latest',
         kernel_args: {
@@ -149,13 +140,14 @@ exports['defaults'] = function (t) {
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports['defaults with kernel flags'] = function (t) {
+test('defaults with kernel flags', function (t) {
+    setUpMocks();
     var params = {
         platform: 'latest',
         kernel_args: {
@@ -217,13 +209,14 @@ exports['defaults with kernel flags'] = function (t) {
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports['serial console'] = function (t) {
+test('serial console', function (t) {
+    setUpMocks();
     var params = {
         platform: 'some',
         default_console: 'serial',
@@ -272,13 +265,14 @@ exports['serial console'] = function (t) {
                   format(IPXE_INITRD, params.platform),
                   'boot'
               ]), 'boot.ipxe');
-              t.done();
+              t.end();
         });
     });
-};
+});
 
 
-exports['VGA console'] = function (t) {
+test('VGA console', function (t) {
+    setUpMocks();
     var params = {
         platform: '20121213T212651Z',
         serial: 'none'
@@ -325,17 +319,7 @@ exports['VGA console'] = function (t) {
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
-            t.done();
+            t.end();
         });
     });
-};
-
-
-
-// Use to run only one test in this file:
-if (runOne) {
-    module.exports = {
-        setUp: exports.setUp,
-        oneTest: runOne
-    };
-}
+});

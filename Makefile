@@ -21,7 +21,8 @@ TOP := $(shell pwd)
 # Tools
 #
 
-NODEUNIT	:= ./node_modules/.bin/nodeunit
+TAPE := ./node_modules/.bin/tape
+ISTANBUL := ./node_modules/.bin/istanbul
 PACK := node_modules/pack/index.js
 
 
@@ -72,18 +73,24 @@ include ./tools/mk/Makefile.smf.defs
 
 
 .PHONY: all
-all: $(REPO_DEPS) $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts src/node-pack/index.js
+all: $(REPO_DEPS) $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts src/node-pack/index.js
+
+node_modules: package.json | $(NPM_EXEC)
 	$(NPM) install
 
-$(NODEUNIT): | $(NPM_EXEC)
-	$(NPM) install
-	cp -r src/node-pack node_modules/pack
+$(TAPE): node_modules
+
+$(ISTANBUL): node_modules
 
 .PHONY: test
-test:  $(PACK) | $(NODEUNIT)
-	$(NODEUNIT) --reporter=tap test/*.test.js
+test:  $(PACK) | $(TAPE) node_modules
+	$(TAPE) test/*.test.js
 
-$(PACK):
+.PHONY: coverage
+coverage: $(PACK) | $(ISTANBUL) $(TAPE) node_modules
+	$(ISTANBUL) cover $(TAPE) test/*.test.js
+
+$(PACK): | node_modules
 	cp -r src/node-pack node_modules/pack
 
 

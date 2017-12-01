@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2016, Joyent, Inc.
+    Copyright (c) 2017, Joyent, Inc.
 -->
 
 # sdc-booter
@@ -33,7 +33,7 @@ headnode.
     lib/            source files
     node_modules/   node.js deps, installed from npm
     smf/manifests   SMF manifests
-    test/           nodeunit test suite (run with `make test`)
+    test/           test suite (run with `make test`)
     tools/          miscellaneous dev/upgrade/deployment tools and data.
     server.js       the main entry point for the server
 
@@ -63,7 +63,7 @@ To run all tests:
 
 To run a single test:
 
-    ./node_modules/.bin/nodeunit --reporter=tap <test>
+    ./node_modules/.bin/tape <test>
 
 
 # Configuration

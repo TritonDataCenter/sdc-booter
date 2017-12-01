@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /*
@@ -21,18 +21,13 @@ var mod_log = require('./lib/log');
 var mod_mock = require('./lib/mocks');
 var mod_server = require('./lib/server');
 var restify = require('restify');
+var test = require('tape');
 var util = require('util');
 var vasync = require('vasync');
 
 
-
 // --- Globals
 
-
-
-// Set this to any of the exports in this file to only run that test,
-// plus setup and teardown
-var runOne;
 
 var CN1_NICS = [
     {
@@ -92,8 +87,6 @@ var DEFAULT_BOOT_PARAMS = {
 };
 
 var mocks;
-var MOCKS_REGISTERED = false;
-
 
 
 // --- Internal helpers
@@ -128,33 +121,30 @@ function getBootParams(opts, callback) {
 
 
 
-// --- Setup
+// --- Setup / Teardown
 
 
-
-// run before every test
-exports.setUp = function (cb) {
+function setUpMocks() {
     mod_mock.register();
 
-    if (!bp) {
-        bp = require('../lib/bootparams');
-    }
-
-    if (!mod_dhcpd) {
-        mod_dhcpd = require('../lib/dhcpd');
-    }
+    bp = require('../lib/bootparams');
+    mod_dhcpd = require('../lib/dhcpd');
 
     mocks = mod_mock.create();
-    return cb();
-};
+}
 
+
+function tearDownMocks() {
+    mockery.disable();
+}
 
 
 // --- Tests
 
 
 
-exports['new CN boots'] = function (t) {
+test('new CN boots', function (t) {
+    setUpMocks();
     var newNic = {
         belongs_to_type: 'other',
         belongs_to_uuid: mod_server.adminUuid,
@@ -181,9 +171,9 @@ exports['new CN boots'] = function (t) {
     };
 
     getBootParams({ mac: newNic.mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         var params = clone(DEFAULT_BOOT_PARAMS);
@@ -224,12 +214,14 @@ exports['new CN boots'] = function (t) {
             ]
         }, 'network boot-time file written correctly');
 
-        t.done();
+        tearDownMocks();
+        t.end();
     });
-};
+});
 
 
-exports['existing CN boots'] = function (t) {
+test('existing CN boots', function (t) {
+    setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
 
@@ -247,9 +239,9 @@ exports['existing CN boots'] = function (t) {
     var expParams = clone(bootParams);
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -282,12 +274,14 @@ exports['existing CN boots'] = function (t) {
             ]
         }, 'network boot-time file written correctly');
 
-        return t.done();
+        tearDownMocks();
+        return t.end();
     });
-};
+});
 
 
-exports['existing CN boots: no bootparams'] = function (t) {
+test('existing CN boots: no bootparams', function (t) {
+    setUpMocks();
     var serverNics = clone(CN1_NICS);
 
     mocks.napi.VALUES = {
@@ -307,9 +301,9 @@ exports['existing CN boots: no bootparams'] = function (t) {
     var expParams = clone(DEFAULT_BOOT_PARAMS);
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -339,9 +333,10 @@ exports['existing CN boots: no bootparams'] = function (t) {
             ]
         }, 'network boot-time file written correctly');
 
-        t.done();
+        tearDownMocks();
+        t.end();
     });
-};
+});
 
 
 /*
@@ -349,7 +344,8 @@ exports['existing CN boots: no bootparams'] = function (t) {
  * nic configured.  For example, you might want to boot from a 1g nic but
  * have admin be a 10g.
  */
-exports['admin nic different than booting nic'] = function (t) {
+test('admin nic different than booting nic', function (t) {
+    setUpMocks();
     var desc = ': admin nic != booting nic';
     var serverNics = clone(CN1_NICS);
     serverNics[0].nic_tags_provided = [ 'admin' ];
@@ -369,9 +365,9 @@ exports['admin nic different than booting nic'] = function (t) {
     var expParams = clone(CN1_BOOT_PARAMS);
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         // admin_nic will be set to the nic in NAPI with nic_tags_provided of
@@ -400,12 +396,14 @@ exports['admin nic different than booting nic'] = function (t) {
             ]
         }, 'network boot-time file' + desc);
 
-        return t.done();
+        tearDownMocks();
+        return t.end();
     });
-};
+});
 
 
-exports['existing CN boots: NAPI connection error'] = function (t) {
+test('existing CN boots: NAPI connection error', function (t) {
+    setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
     var bootParams2 = clone(CN1_BOOT_PARAMS);
@@ -466,7 +464,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
         // First call: things go normally
         function (_, cb) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-                t.ifError(err);
+                t.ifError(err, 'expect truthy value');
                 if (err) {
                     return cb();
                 }
@@ -485,7 +483,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
         // Second call: napi.getNic() returns an error
         function (_, cb) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-                t.ifError(err);
+                t.ifError(err, 'expect truthy value');
                 if (err) {
                     return cb();
                 }
@@ -514,7 +512,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
         // Third call: things go normally, and CNAPI returns updated params
         function (_, cb) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-                t.ifError(err);
+                t.ifError(err, 'expect truthy value');
                 if (err) {
                     return cb();
                 }
@@ -545,7 +543,7 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
         // Fourth call: napi.getNics() returns an error
         function (_, cb) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-                t.ifError(err);
+                t.ifError(err, 'expect truthy value');
                 if (err) {
                     return cb();
                 }
@@ -569,12 +567,14 @@ exports['existing CN boots: NAPI connection error'] = function (t) {
             });
         }
     ] }, function () {
-        return t.done();
+        tearDownMocks();
+        return t.end();
     });
-};
+});
 
 
-exports['existing CN boots: CNAPI connection error'] = function (t) {
+test('existing CN boots: CNAPI connection error', function (t) {
+    setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
 
@@ -616,9 +616,9 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
     var expParams;
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         expParams = res.bootParams;
@@ -627,7 +627,7 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
             'network boot-time file written correctly');
 
         getBootParams({ mac: serverNics[1].mac }, function (err2, res2) {
-            t.ifError(err2);
+            t.ifError(err2, 'expect truthy value');
             t.deepEqual(res2.bootParams, expParams, 'same params returned');
 
             // Confirm we're erroring out where we expect:
@@ -644,13 +644,14 @@ exports['existing CN boots: CNAPI connection error'] = function (t) {
             t.deepEqual(mod_file.netConfig(serverNics[1].mac), expNetConfig,
                 'network boot-time still correct');
 
-            return t.done();
+            return t.end();
         });
     });
-};
+});
 
 
-exports['error while provisioning nic'] = function (t) {
+test('error while provisioning nic', function (t) {
+    setUpMocks();
     mocks.napi.VALUES = {
         getNic: [ { err: error404() } ],
         provisionNic: [ { err: new Error('XXX bad error') } ],
@@ -664,16 +665,18 @@ exports['error while provisioning nic'] = function (t) {
     getBootParams({ mac: '06:b7:ad:86:be:05' }, function (err, res) {
         t.ok(err, 'Error returned');
         if (!err) {
-            return t.done();
+            return t.end();
         }
 
         t.equal(err.message, 'XXX bad error', 'correct error returned');
-        t.done();
+        tearDownMocks();
+        t.end();
     });
-};
+});
 
 
-exports['invalid JSON in cache file'] = function (t) {
+test('invalid JSON in cache file',  function (t) {
+    setUpMocks();
     var bootParams = clone(CN1_BOOT_PARAMS);
     var serverNics = clone(CN1_NICS);
 
@@ -698,9 +701,9 @@ exports['invalid JSON in cache file'] = function (t) {
     };
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         mod_file.cache(serverNics[1].mac, 'asdf');
@@ -708,18 +711,20 @@ exports['invalid JSON in cache file'] = function (t) {
         getBootParams({ mac: serverNics[1].mac }, function (err2) {
             t.ok(err2, 'Error returned');
             if (!err2) {
-                return t.done();
+                return t.end();
             }
 
             t.equal(err2.message, 'connect ECONNREFUSED',
-                'correct error returned');
-            t.done();
+                    'correct error returned');
+            tearDownMocks();
+            t.end();
         });
     });
-};
+});
 
 
-exports['aggregation'] = function (t) {
+test('aggregation', function (t) {
+    setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
     var bootParams2 = clone(CN1_BOOT_PARAMS);
@@ -761,9 +766,9 @@ exports['aggregation'] = function (t) {
     var expParams = clone(bootParams);
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
-        t.ifError(err);
+        t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.done();
+            return t.end();
         }
 
         expParams.kernel_args.admin_nic = 'aggr0';
@@ -810,7 +815,7 @@ exports['aggregation'] = function (t) {
 
         // Boot again, but with admin_nic overridden by CNAPI bootparams
         getBootParams({ mac: serverNics[1].mac }, function (err2, res2) {
-            t.ifError(err2);
+            t.ifError(err2, 'expect truthy value');
 
             var expParams2 = clone(expParams);
             expParams2.kernel_args.admin_nic = serverNics[1].mac;
@@ -835,28 +840,8 @@ exports['aggregation'] = function (t) {
                 ]
             }, 'network boot-time file written correctly');
 
-            return t.done();
+            tearDownMocks();
+            return t.end();
         });
     });
-};
-
-
-
-// --- Teardown
-
-
-
-exports.tearDown = function (cb) {
-    mockery.disable();
-    cb();
-};
-
-
-
-// Use to run only one test in this file:
-if (runOne) {
-    module.exports = {
-        setUp: exports.setUp,
-        oneTest: runOne
-    };
-}
+});
