@@ -45,7 +45,7 @@ CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
 REPO_MODULES := src/node-pack
 JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 
-NODE_PREBUILT_VERSION=v0.10.48
+NODE_PREBUILT_VERSION=v4.8.5
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
 	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
