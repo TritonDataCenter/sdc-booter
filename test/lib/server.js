@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -90,7 +90,16 @@ function serverConfig() {
         port: 10067,
         resolvers: [],
         serverIp: '10.99.99.9',
-        tftpRoot: '/tmp/tftpRoot'
+        tftpRoot: '/tmp/tftpRoot',
+        // For testing of other server components, intervals set to a high value
+        // that will not fire during a unit test run of any reasonable length.
+        cache: {
+            dir: '/tmp/tftpRoot/cache',
+            refreshIntervalSeconds: 3000,
+            purgeIntervalSeconds: 36000,
+            maxCacheFileAgeSeconds: 604800,
+            refreshConcurrency: 1
+        }
     };
 }
 

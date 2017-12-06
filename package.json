@@ -15,7 +15,8 @@
     "sdc-clients": "10.3.0",
     "sdc-bunyan-serializers": "git+https://github.com/joyent/sdc-bunyan-serializers.git#a3e7780",
     "sprintf": "0.1.0",
-    "vasync": "1.6.2"
+    "vasync": "1.6.2",
+    "verror":  "1.10.0"
   },
   "devDependencies": {
     "clone": "0.1.4",

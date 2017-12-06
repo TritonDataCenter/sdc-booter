@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -319,13 +319,16 @@ function registerMocks() {
         'vasync',
         'verror',
         '../../lib/boot-files',
+        '../../lib/cache',
         '../../lib/dhcpd',
         '../lib/bootparams',
+        '../lib/cache',
         '../lib/dhcpd',
         '../lib/menulst',
         './bootparams',
         './boot-files',
         './clients',
+        './cache',
         './dhcp',
         './find',
         './json-file',
