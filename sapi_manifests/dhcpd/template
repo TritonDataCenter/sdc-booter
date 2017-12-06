@@ -32,6 +32,13 @@
   "serverIp": "{{{dhcpd_admin_ip}}}",
   "leaseTime": {{{dhcp_lease_time}}},
   "resolvers": {{{resolvers}}}{{^resolvers}}[]{{/resolvers}},
-  "netmask": "{{{admin_netmask}}}"{{#allow_missing_class_id}},
-  "allowMissingClassID": true{{/allow_missing_class_id}}
+  "netmask": "{{{admin_netmask}}}",
+  {{#allow_missing_class_id}}"allowMissingClassID": true,{{/allow_missing_class_id}}
+  "cache": {
+    "dir": "/tftpboot/cache",
+    "refreshIntervalSeconds": 300,
+    "purgeIntervalSeconds": 3600,
+    "maxCacheFileAgeSeconds": 604800,
+    "refreshConcurrency": 16
+  }
 }
