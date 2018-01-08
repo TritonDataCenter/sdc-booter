@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -13,8 +13,12 @@
  */
 
 var bunyan = require('bunyan');
+var fs = require('fs');
 var dhcpd = require('./lib/dhcpd');
 var stdSerializers = require('sdc-bunyan-serializers');
+var AdminPoolCache = require('./lib/admin-pool-cache');
+var mod_clients = require('./lib/clients');
+
 
 
 var log = bunyan.createLogger({
@@ -24,11 +28,38 @@ var log = bunyan.createLogger({
 });
 
 try {
+    var configFile = __dirname + '/config.json';
+    var config = JSON.parse(fs.readFileSync(configFile, 'utf-8'));
+    var napi = mod_clients.createNAPIclient(config);
+
+    log.info('Loaded config from "%s"', configFile);
+
+    var poolCache = AdminPoolCache.create({
+        napi: napi,
+        log: log,
+        cacheDir: config.poolCache.dir,
+        cacheUpdateIntervalSeconds: config.poolCache.updateIntervalSeconds
+    });
+
     var server = dhcpd.createServer({
         log: log,
-        configFile: __dirname + '/config.json'
+        config: config,
+        napi: napi,
+        adminPoolCache: poolCache
     });
-    server.start();
+
+    /*
+     * Update the pool cache before we start the dhcpd server.
+     */
+    poolCache.update(function (err) {
+        if (err) {
+            log.error('Failed initial admin pool cache update', err);
+            throw err;
+        } else {
+            log.info('Initial cache update completed.  Starting DHCP server.');
+            server.start();
+        }
+    });
 } catch (err) {
     log.error(err);
     process.exit(1);

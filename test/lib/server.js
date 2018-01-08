@@ -13,9 +13,11 @@
  */
 
 var assert = require('assert-plus');
+var vasync = require('vasync');
+var mod_log = require('./log');
 var mod_boot_files;
 var mod_dhcpd;
-var mod_log = require('./log');
+var adminPoolCache;
 
 
 
@@ -24,14 +26,12 @@ var mod_log = require('./log');
 
 
 var ADMIN_UUID = '930896af-bf8c-48d4-885c-6573a94b1853';
-var SERVER;
+var SERVER = {};
 
 
 
-function createServer() {
-    if (SERVER) {
-        return;
-    }
+function createServer(config) {
+    var log = mod_log.child({ component: 'test-server' });
 
     if (!mod_boot_files) {
         mod_boot_files = require('../../lib/boot-files');
@@ -41,30 +41,57 @@ function createServer() {
         mod_dhcpd = require('../../lib/dhcpd');
     }
 
-    SERVER = mod_dhcpd.createServer({
-        config: serverConfig(),
-        log: mod_log.child({ component: 'test-server' })
-    });
-}
+    if (!adminPoolCache) {
+        adminPoolCache = require('../../lib/admin-pool-cache');
+    }
 
+    var cache = adminPoolCache.create({
+        napi: config.opts.napi,
+        log: log,
+        cacheDir: config.poolCache.dir,
+        cacheUpdateIntervalSeconds: config.poolCache.updateIntervalSeconds
+    });
+
+    var dhcp = mod_dhcpd.createServer({
+        config: config,
+        log: log,
+        adminPoolCache: cache,
+        napi: config.opts.napi,
+        cnapi: config.opts.cnapi
+    });
+
+    SERVER.dhcp = dhcp;
+    SERVER.cache = cache;
+    SERVER.log = log;
+}
 
 function bootData(opts, callback) {
     assert.object(opts, 'opts');
     assert.string(opts.mac, 'opts.mac');
-    createServer();
 
-    SERVER.cnapi = opts.cnapi;
-    SERVER.napi = opts.napi;
+    var config = serverConfig();
+    config.opts = opts;
 
-    mod_boot_files.writeAll({
-        config: serverConfig(),
-        cnapi: opts.cnapi,
-        log: mod_log.child({ mac: opts.mac }),
-        mac: opts.mac,
-        napi: opts.napi
-    }, callback);
+    createServer(config);
+    SERVER.cache.update(function (error) {
+        if (error) {
+            callback(error, null);
+            return;
+        }
+
+        mod_boot_files.writeAll({
+            config: config,
+            cnapi: opts.cnapi,
+            log: mod_log.child({ mac: opts.mac }),
+            mac: opts.mac,
+            napi: opts.napi,
+            adminPoolCache: SERVER.cache,
+            nic_tag: opts.nic_tag
+        }, function (err, res) {
+            callback(err, res);
+        });
+    });
 }
-
 
 function serverConfig() {
     return {
@@ -99,6 +126,10 @@ function serverConfig() {
             purgeIntervalSeconds: 36000,
             maxCacheFileAgeSeconds: 604800,
             refreshConcurrency: 1
+        },
+        poolCache: {
+            updateIntervalSeconds: 60,
+            dir: '/tmp/tftpRoot/poolcache'
         }
     };
 }

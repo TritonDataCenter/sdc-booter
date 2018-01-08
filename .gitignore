@@ -1,3 +1,4 @@
+*.swp
 /coverage
 /dhcpd-pkg-*.tar.bz2
 /node_modules

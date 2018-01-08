@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -30,6 +30,28 @@ var LOG = mod_log.child({ component: 'file' });
 // --- Exports
 
 
+function adminPoolCache() {
+    var fs = mod_mocks.getCreated().fs.getRoot();
+    var path = mod_server.config().poolCache.dir;
+    var name = 'admin_network_pool.json';
+
+    if (!fs.hasOwnProperty(path)) {
+        return '';
+    }
+
+    if (!fs.hasOwnProperty(path)) {
+        LOG.debug({fs: fs, path: path}, 'path does not exist');
+        return {};
+    }
+
+    if (!fs[path].hasOwnProperty(name)) {
+        LOG.debug({fs: fs, path: path},
+            'admin_network_pool.json does not exist');
+        return {};
+    }
+
+    return JSON.parse(fs[path][name]);
+}
 
 function cacheFile(mac, val) {
     var name = fmt('%s.json', mac);
@@ -40,7 +62,6 @@ function cacheFile(mac, val) {
 
     return JSON.parse(mod_mocks.getCreated().fs.getRoot()[path][name]);
 }
-
 
 function menuLstFile(mac) {
     var fs = mod_mocks.getCreated().fs.getRoot();
@@ -54,7 +75,6 @@ function menuLstFile(mac) {
 
     return fs[path][name];
 }
-
 
 function netBootTimeFile(mac) {
     var name = 'networking.json';
@@ -77,6 +97,7 @@ function netBootTimeFile(mac) {
 
 
 module.exports = {
+    adminPoolCache: adminPoolCache,
     cache: cacheFile,
     menuLst: menuLstFile,
     netConfig: netBootTimeFile

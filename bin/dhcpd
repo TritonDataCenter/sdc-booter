@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 TOP=$(unset CDPATH; cd $(dirname $0)/../; pwd)
@@ -16,4 +16,4 @@ if [[ ! -d "${NODE_INSTALL}" && -d "${TOP}/build/node" ]]; then
     NODE_INSTALL=${TOP}/build/node
 fi
 
-${NODE_INSTALL}/bin/node ${TOP}/server.js "$@"
+${NODE_INSTALL}/bin/node --abort-on-uncaught-exception ${TOP}/server.js "$@"

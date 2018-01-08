@@ -40,5 +40,9 @@
     "purgeIntervalSeconds": 3600,
     "maxCacheFileAgeSeconds": 604800,
     "refreshConcurrency": 16
+  },
+  "poolCache": {
+    "updateIntervalSeconds": 60,
+    "dir": "/tftpboot/poolcache"
   }
 }

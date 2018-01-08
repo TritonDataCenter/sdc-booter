@@ -154,6 +154,16 @@ function createMocks() {
             { mac: mac, params: params }, cb);
     };
 
+    mocks.napi.listNetworks = function (params, options, cb) {
+        return this._handle('listNetworks',
+            { params: params, options: options }, cb);
+    };
+
+    mocks.napi.listNetworkPools = function (params, options, cb) {
+        return this._handle('listNetworkPools',
+            { params: params, options: options }, cb);
+    };
+
     // CNAPI
 
     mocks.cnapi = new Mock();
@@ -217,7 +227,6 @@ function createMocks() {
                 err.code = 'EEXIST';
                 return setImmediate(cb, err);
             }
-
             ROOT[dir] = {};
             return setImmediate(cb);
         },
@@ -310,6 +319,7 @@ function registerMocks() {
         'extsprintf',
         'events',
         'findit',
+        'ip6addr',
         'node-uuid',
         'pack',
         'path',
@@ -318,6 +328,7 @@ function registerMocks() {
         'util',
         'vasync',
         'verror',
+        '../../lib/admin-pool-cache',
         '../../lib/boot-files',
         '../../lib/cache',
         '../../lib/dhcpd',

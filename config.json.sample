@@ -16,5 +16,9 @@
   "defaultGateway": "10.99.99.7",
   "serverIp": "10.99.99.11",
   "leaseTime": 3600,
-  "netmask": "255.255.255.0"
+  "netmask": "255.255.255.0",
+  "poolCache": {
+    "updateIntervalSeconds": 60,
+    "dir": "/tftpboot/poolcache"
+  }
 }

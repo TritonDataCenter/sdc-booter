@@ -72,7 +72,7 @@ Booter supports a few SAPI configuration values:
 
 - `http_pxe_boot`: if set to `true`, allow iPXE clients to pull down their
   files via HTTP rather than TFTP
-- `compute_node_default_gateway`: set this to give Compute Nodess a
+- `compute_node_default_gateway`: set this to give Compute Nodes a
   default gateway
 - `dhcp_lease_time`: DHCP lease time for Compute Nodes
 - `allow_missing_class_id`: booter only allows clients with class identifiers
