@@ -29,7 +29,7 @@
   "port": 67,
   "tftpRoot": "/tftpboot",
   "defaultGateway": "{{{compute_node_default_gateway}}}",
-  "serverIp": "{{{dhcpd_admin_ip}}}",
+  "serverIp": "{{{auto.ADMIN_IP}}}",
   "leaseTime": {{{dhcp_lease_time}}},
   "resolvers": {{{resolvers}}}{{^resolvers}}[]{{/resolvers}},
   "netmask": "{{{admin_netmask}}}",
