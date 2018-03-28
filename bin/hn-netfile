@@ -155,26 +155,97 @@ function getHeadnodeInfo(opts, callback) {
 }
 
 
+/*
+ * Get this servers nics (sets `opts.nics`) and, importantly, the "admin" NIC
+ * (sets `opts.adminNic`).
+ *
+ * If aggrs are in play, identifying the admin NIC is more effort:
+ *
+ * 1. List aggrs for this server, if any. Find the first aggr (should be only)
+ *    one with "admin" in `nic_tags_provided`. Then use first MAC in
+ *    `aggr.macs`. (The first one because the first one is the MAC address of
+ *    the aggr -- per the behaviour of dladm.) We need to GetNic this MAC
+ *    to get the full NIC object.
+ * 2. If no hits from aggrs, then we use the server's NIC with "admin" in
+ *    `nic_tags_provided`.
+ */
 function getNics(opts, callback) {
     log.debug({cn_uuid: opts.cn_uuid}, 'getNics');
-    opts.napi.getNics(opts.cn_uuid, function (err, list) {
-        if (err) {
-            return callback(err);
-        }
 
-        var nic;
-        opts.nics = list;
+    mod_vasync.pipeline({arg: {}, funcs: [
+        function listNics(ctx, next) {
+            opts.napi.getNics(opts.cn_uuid, function (err, nics) {
+                if (err) {
+                    next(err);
+                } else {
+                    ctx.nics = nics;
+                    opts.nics = nics;
+                    next();
+                }
+            });
+        },
 
-        for (var n in list) {
-            nic = list[n];
-            if (nic.hasOwnProperty('nic_tags_provided') &&
-                    nic.nic_tags_provided.indexOf('admin') !== -1) {
-                opts.adminNic = nic;
+        function findAdminMacInAggrs(ctx, next) {
+            opts.napi.listAggrs({
+                belongs_to_uuid: opts.cn_uuid
+            }, function (err, aggrs) {
+                if (err) {
+                    next(err);
+                    return;
+                }
+
+                var aggr;
+
+                for (var i = 0; i < aggrs.length; i++) {
+                    aggr = aggrs[i];
+                    if (aggr.nic_tags_provided &&
+                        aggr.nic_tags_provided.indexOf('admin') !== -1) {
+                        mod_assert.ok(aggr.macs.length > 0,
+                            'aggr object has no macs: ' + aggr.id);
+                        ctx.adminMac = aggr.macs[0];
+                        break;
+                    }
+                }
+                next();
+            });
+        },
+
+        function nicFromAdminMac(ctx, next) {
+            if (!ctx.adminMac) {
+                next();
+                return;
             }
-        }
 
-        return callback();
-    });
+            opts.napi.getNic(ctx.adminMac, function (err, nic) {
+                if (err) {
+                    next(err);
+                } else {
+                    opts.adminNic = nic;
+                    next();
+                }
+            });
+        },
+
+        function findAdminNicInNics(ctx, next) {
+            if (ctx.adminNic) {
+                next();
+                return;
+            }
+
+            var nic;
+
+            for (var i = 0; i < ctx.nics.length; i++) {
+                nic = ctx.nics[i];
+                if (nic.nic_tags_provided &&
+                    nic.nic_tags_provided.indexOf('admin') !== -1) {
+                    opts.adminNic = nic;
+                    break;
+                }
+            }
+
+            next();
+        }
+    ]}, callback);
 }
 
 
