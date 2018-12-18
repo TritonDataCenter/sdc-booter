@@ -1,18 +1,14 @@
 #!/bin/ksh
 #
-# For rather unforunate reasons related to inter-repository dependencies, we
-# ship a copy of "pxegrub" from the platform boot tarball, and "undionly.kpxe"
-# (iPXE) from the "sdcboot" tarball.
+# This repository has local copies of the iPXE binaries we provide to CNs that
+# use BIOS PXE instead of booting iPXE from a local USB key.
 #
-# This tool may be run to download the iPXE binary from the latest build of the
-# master branch of the "sdcboot" repository into the correct place in this
-# repository.
+# This script updates to the latest binaries from the ipxe tarball.
 #
+# Copyright (c) 2018, Joyent, Inc.
 
-#
-# The file we want; i.e. the iPXE UNDI chainloading PXE boot binary
-#
-IPXEFILE='./boot/undionly.kpxe'
+IPXEFILES="./boot/undionly.kpxe ./boot/snponly.efi"
+
 
 set -o errexit
 set -o pipefail
@@ -22,7 +18,7 @@ dir="$(dirname $(whence $0))/.."
 cd "${dir}"
 
 function fatal {
-	printf 'ERROR: %s\n' >&2
+	printf "ERROR: %s\n" "$*" >&2
 	if [[ -n "${tdir}" && -d "${tdir}" ]]; then
 		# Clean up temporary directory
 		rm -rf "${tdir}"
@@ -30,35 +26,37 @@ function fatal {
 	exit 1
 }
 
-if ! mdir="$(mget -q /Joyent_Dev/public/builds/sdcboot/master-latest)"; then
-	fatal 'could not locate latest "sdcboot" build directory in Manta'
+branch=${1:-master}
+
+if ! mdir="$(mget -q /Joyent_Dev/public/builds/ipxe/$branch-latest)"; then
+	fatal "could not locate latest ipxe build directory in Manta"
 fi
 
-printf '%15s: %s\n' 'Manta Dir' "${mdir}" >&2
+printf "%15s: %s\n" "Manta Dir" "${mdir}" >&2
 
-if ! mfile="$(mfind -t o -n "^sdcboot-master-.*.tgz$" "${mdir}")"; then
-	fatal 'could not locate latest "sdcboot" build tarball in Manta'
+if ! mfile="$(mfind -t o -n "^ipxe-$branch-.*.tar.gz$" "${mdir}")"; then
+	fatal "could not locate latest ipxe build tarball in Manta"
 fi
 
-printf '%15s: %s\n' 'Manta File' "${mfile}" >&2
+printf "%15s: %s\n" "Manta File" "${mfile}" >&2
 
 if ! tdir="$(/usr/bin/mktemp -d)"; then
-	fatal 'could not make temporary directory'
+	fatal "could not make temporary directory"
 fi
 
-printf '%15s: %s\n' 'Temp Dir' "${mfile}" >&2
+printf "%15s: %s\n" "Temp Dir" "${tdir}" >&2
 cd "${tdir}"
 
-if ! mget -o sdcboot.tgz "${mfile}"; then
-	fatal 'could not download "sdcboot" build tarball'
+if ! mget -o ipxe.tar.gz "${mfile}"; then
+	fatal "could not download ${mfile}"
 fi
 
-if ! tar xvzf sdcboot.tgz "${IPXEFILE}"; then
-	fatal 'could not extract iPXE binary from "sdcboot" tarball'
+if ! tar xvzf ipxe.tar.gz ${IPXEFILES}; then
+	fatal "could not extract iPXE binaries from tarball"
 fi
 
-mv "${IPXEFILE}" "${dir}/tftpboot/"
+mv ${IPXEFILES} ${dir}/tftpboot
 cd /
 rm -rf "${tdir}"
 
-printf 'ok\n' >&2
+printf "ok\n" >&2

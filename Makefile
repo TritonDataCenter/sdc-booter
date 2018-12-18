@@ -141,7 +141,7 @@ release: $(RELEASE_TARBALL)
 $(RELEASE_TARBALL): pkg
 	(cd $(PKG_DIR); $(TAR) -I pigz -cf $(TOP)/$(RELEASE_TARBALL) root)
 
-publish:
+publish: release
 	@if [[ -z "$(ENGBLD_BITS_DIR)" ]]; then \
 		echo "error: 'ENGBLD_BITS_DIR' must be set for 'publish' target"; \
 		exit 1; \
