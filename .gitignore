@@ -1,7 +1,9 @@
 *.swp
 /coverage
-/dhcpd-pkg-*.tar.bz2
+/dhcpd-pkg-*.tar.gz
+/make_stamps
 /node_modules
 /deps/node-install
 /smf/manifests/*.xml
+/bits
 /build

@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 NAME=dhcpd
@@ -20,16 +20,13 @@ TOP := $(shell pwd)
 #
 # Tools
 #
-
 TAPE := ./node_modules/.bin/tape
 ISTANBUL := ./node_modules/.bin/istanbul
 PACK := node_modules/pack/index.js
 
-
 #
 # Files
 #
-
 BASH_FILES	:= bin/booter bin/dhcpd
 JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js') bin/hn-netfile
 JSL_CONF_NODE	 = tools/jsl.node.conf
@@ -40,10 +37,13 @@ SMF_MANIFESTS_IN = smf/manifests/dhcpd.xml.in smf/manifests/tftpd.xml.in
 PKG_DIR = $(BUILD)/pkg
 BOOTER_PKG_DIR = $(PKG_DIR)/root/opt/smartdc/booter
 TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
-RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.bz2
-CLEAN_FILES += ./node_modules build/pkg dhcpd-pkg-*.tar.bz2
+RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.gz
+CLEAN_FILES += ./node_modules build/pkg
 REPO_MODULES := src/node-pack
 JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
+
+REPO_DEPS    = $(REPO_MODULES:src/node-%=node_modules/%)
+CLEAN_FILES += $(REPO_DEPS)
 
 NODE_PREBUILT_VERSION=v4.9.0
 ifeq ($(shell uname -s),SunOS)
@@ -51,27 +51,33 @@ ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
 endif
 
+# our base image is triton-origin-multiarch-15.4.1
+BASE_IMAGE_UUID = 04a48d7d-6bb5-4e83-8c3b-e60a99e0f48f
+BUILDIMAGE_NAME = $(NAME)
+BUILDIMAGE_DESC	= SDC DHCPD
+BUILDIMAGE_PKGSRC = nginx-1.10.1 tftp-hpa-5.2
+AGENTS		= amon config registrar
 
 #
 # Included definitions
 #
+ENGBLD_USE_BUILDIMAGE	= true
+ENGBLD_REQUIRE		:= $(shell git submodule update --init deps/eng)
+include ./deps/eng/tools/mk/Makefile.defs
+TOP ?= $(error Unable to access eng.git submodule Makefiles.)
 
-include ./tools/mk/Makefile.defs
 ifeq ($(shell uname -s),SunOS)
-	include ./tools/mk/Makefile.node_prebuilt.defs
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
+	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.defs
 else
 	NPM_EXEC :=
 	NPM = npm
 endif
-include ./tools/mk/Makefile.node_deps.defs
-include ./tools/mk/Makefile.smf.defs
-
+include ./deps/eng/tools/mk/Makefile.smf.defs
 
 #
 # Repo-specific targets
 #
-
-
 .PHONY: all
 all: $(REPO_DEPS) $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts src/node-pack/index.js
 
@@ -93,6 +99,9 @@ coverage: $(PACK) | $(ISTANBUL) $(TAPE) node_modules
 $(PACK): | node_modules
 	cp -r src/node-pack node_modules/pack
 
+# a target to make our pack module
+node_modules/%: src/node-% | $(NPM_EXEC)
+	$(NPM) install $<
 
 #
 # Packaging targets
@@ -130,27 +139,28 @@ pkg: all
 release: $(RELEASE_TARBALL)
 
 $(RELEASE_TARBALL): pkg
-	(cd $(PKG_DIR); $(TAR) -jcf $(TOP)/$(RELEASE_TARBALL) root)
+	(cd $(PKG_DIR); $(TAR) -I pigz -cf $(TOP)/$(RELEASE_TARBALL) root)
 
 publish:
-	@if [[ -z "$(BITS_DIR)" ]]; then \
-		echo "error: 'BITS_DIR' must be set for 'publish' target"; \
+	@if [[ -z "$(ENGBLD_BITS_DIR)" ]]; then \
+		echo "error: 'ENGBLD_BITS_DIR' must be set for 'publish' target"; \
 		exit 1; \
 	fi
-	mkdir -p $(BITS_DIR)/dhcpd
-	cp $(RELEASE_TARBALL) $(BITS_DIR)/dhcpd/$(RELEASE_TARBALL)
+	mkdir -p $(ENGBLD_BITS_DIR)/dhcpd
+	cp $(RELEASE_TARBALL) $(ENGBLD_BITS_DIR)/dhcpd/$(RELEASE_TARBALL)
+
+check:: $(NODE_EXEC)
 
 
 #
 # Includes
 #
-
-include ./tools/mk/Makefile.deps
+include ./deps/eng/tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)
-	include ./tools/mk/Makefile.node_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.node_prebuilt.targ
+	include ./deps/eng/tools/mk/Makefile.agent_prebuilt.targ
 endif
-include ./tools/mk/Makefile.node_deps.targ
-include ./tools/mk/Makefile.smf.targ
-include ./tools/mk/Makefile.targ
+include ./deps/eng/tools/mk/Makefile.smf.targ
+include ./deps/eng/tools/mk/Makefile.targ
 
 sdc-scripts: deps/sdc-scripts/.git
