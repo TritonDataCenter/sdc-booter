@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2017, Joyent, Inc.
+    Copyright (c) 2019, Joyent, Inc.
 -->
 
 # sdc-booter
@@ -90,3 +90,18 @@ Global Zone:
     dhcpd_svc=$(sdc-sapi /services?name=dhcpd | json -Ha uuid)
     sapiadm update $dhcpd_svc metadata.http_pxe_boot=true
 
+
+# Delivery of custom `driver.conf` files
+
+To deliver a custom `driver.conf(4)` file without rebuilding the PI, place the
+required file and its hash file in the per-CN boot file system directory.
+
+```
+cd /tftpboot/bootfs/90<lower-case-mac-with-no-colons>/
+mkdir -p kernel/drv
+cp /.../sd.conf kernel/drv
+digest -a sha1 kernel/drv/sd.conf > kernel/drv/sd.conf.hash
+```
+
+Note that this customization will be lost the next time that the booter instance
+is redeployed.
