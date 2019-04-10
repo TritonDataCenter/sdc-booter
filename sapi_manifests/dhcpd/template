@@ -21,6 +21,7 @@
   },
   "disableBootTimeFiles": true,
 {{/fabric_cfg}}
+  "datacenterName": "{{datacenter_name}}",
   "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
   "ipxeHTTP": {{http_pxe_boot}},{{/http_pxe_boot}}{{#chainload_grub}}
   "chainloadGrub": {{chainload_grub}},{{/chainload_grub}}
