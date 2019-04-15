@@ -19,7 +19,6 @@
   "overlay": {
       "enabled": false
   },
-  "disableBootTimeFiles": true,
 {{/fabric_cfg}}
   "datacenterName": "{{datacenter_name}}",
   "dnsDomain": "{{dns_domain}}",{{#http_pxe_boot}}
@@ -35,6 +34,7 @@
   "resolvers": {{{resolvers}}}{{^resolvers}}[]{{/resolvers}},
   "netmask": "{{{admin_netmask}}}",
   {{#allow_missing_class_id}}"allowMissingClassID": true,{{/allow_missing_class_id}}
+  {{#disable_boot_time_files}}"disableBootTimeFiles": true,{{/disable_boot_time_files}}
   "cache": {
     "dir": "/tftpboot/cache",
     "refreshIntervalSeconds": 300,
