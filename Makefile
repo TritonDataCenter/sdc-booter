@@ -22,7 +22,7 @@ TOP := $(shell pwd)
 #
 TAPE := ./node_modules/.bin/tape
 ISTANBUL := ./node_modules/.bin/istanbul
-PACK := node_modules/pack/index.js
+PACK := ./build/pack-0.0.1.tgz
 
 #
 # Files
@@ -38,24 +38,21 @@ PKG_DIR = $(BUILD)/pkg
 BOOTER_PKG_DIR = $(PKG_DIR)/root/opt/smartdc/booter
 TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
 RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.gz
-CLEAN_FILES += ./node_modules build/pkg
+CLEAN_FILES += ./node_modules build/pkg $(PACK)
 REPO_MODULES := src/node-pack
 JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 
-REPO_DEPS    = $(REPO_MODULES:src/node-%=node_modules/%)
-CLEAN_FILES += $(REPO_DEPS)
-
-NODE_PREBUILT_VERSION=v4.9.0
+NODE_PREBUILT_VERSION=v6.17.0
 ifeq ($(shell uname -s),SunOS)
-	NODE_PREBUILT_TAG=zone
-	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
+	NODE_PREBUILT_TAG=zone64
+	NODE_PREBUILT_IMAGE=c2c31b00-1d60-11e9-9a77-ff9f06554b0f
 endif
 
-# our base image is triton-origin-multiarch-15.4.1
-BASE_IMAGE_UUID = 04a48d7d-6bb5-4e83-8c3b-e60a99e0f48f
+# our base image is triton-origin-x86_64-18.4.0
+BASE_IMAGE_UUID = a9368831-958e-432d-a031-f8ce6768d190
 BUILDIMAGE_NAME = $(NAME)
 BUILDIMAGE_DESC	= SDC DHCPD
-BUILDIMAGE_PKGSRC = nginx-1.10.1 tftp-hpa-5.2
+BUILDIMAGE_PKGSRC = nginx-1.14.2 tftp-hpa-5.2
 AGENTS		= amon config registrar
 
 #
@@ -79,9 +76,9 @@ include ./deps/eng/tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 .PHONY: all
-all: $(REPO_DEPS) $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts src/node-pack/index.js
+all: $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts
 
-node_modules: package.json | $(NPM_EXEC)
+node_modules: package.json | $(NPM_EXEC) $(PACK)
 	$(NPM) install
 
 $(TAPE): node_modules
@@ -89,19 +86,16 @@ $(TAPE): node_modules
 $(ISTANBUL): node_modules
 
 .PHONY: test
-test:  $(PACK) | $(TAPE) node_modules
+test: | $(TAPE) node_modules
 	$(TAPE) test/*.test.js
 
 .PHONY: coverage
-coverage: $(PACK) | $(ISTANBUL) $(TAPE) node_modules
+coverage: | $(ISTANBUL) $(TAPE) node_modules
 	$(ISTANBUL) cover $(TAPE) test/*.test.js
 
-$(PACK): | node_modules
-	cp -r src/node-pack node_modules/pack
-
-# a target to make our pack module
-node_modules/%: src/node-% | $(NPM_EXEC)
-	$(NPM) install $<
+$(PACK):
+	$(NPM) pack file:$(TOP)/src/node-pack
+	mv pack-0.0.1.tgz build/
 
 #
 # Packaging targets
@@ -122,7 +116,7 @@ pkg: all
 		sapi_manifests \
 		$(BOOTER_PKG_DIR)
 	cp smf/manifests/*.xml $(BOOTER_PKG_DIR)/smf/manifests
-	(cd $(BOOTER_PKG_DIR) && $(NPM) install --production)
+	(cd $(BOOTER_PKG_DIR) && $(NPM) prune --production)
 	cp -PR $(NODE_INSTALL) $(BOOTER_PKG_DIR)/node
 	rm $(BOOTER_PKG_DIR)/package.json
 	mkdir -p $(PKG_DIR)/root/opt/smartdc/boot
