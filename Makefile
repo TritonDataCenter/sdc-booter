@@ -22,7 +22,7 @@ TOP := $(shell pwd)
 #
 TAPE := ./node_modules/.bin/tape
 ISTANBUL := ./node_modules/.bin/istanbul
-PACK := ./build/pack-0.0.1.tgz
+PACK := ./$(BUILD)/pack-0.0.1.tgz
 
 #
 # Files
@@ -38,7 +38,7 @@ PKG_DIR = $(BUILD)/pkg
 BOOTER_PKG_DIR = $(PKG_DIR)/root/opt/smartdc/booter
 TFTPBOOT_PKG_DIR = $(PKG_DIR)/root/tftpboot/
 RELEASE_TARBALL=dhcpd-pkg-$(STAMP).tar.gz
-CLEAN_FILES += ./node_modules build/pkg $(PACK)
+CLEAN_FILES += ./node_modules $(BUILD)/pkg $(PACK)
 REPO_MODULES := src/node-pack
 JSSTYLE_FLAGS = -o indent=4,doxygen,unparenthesized-return=0
 
@@ -95,7 +95,8 @@ coverage: | $(ISTANBUL) $(TAPE) node_modules
 
 $(PACK):
 	$(NPM) pack file:$(TOP)/src/node-pack
-	mv pack-0.0.1.tgz build/
+	mkdir -p $(TOP)/$(BUILD)
+	mv pack-0.0.1.tgz $(TOP)/$(BUILD)/
 
 #
 # Packaging targets
