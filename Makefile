@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2019, Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 NAME=dhcpd
@@ -79,7 +79,7 @@ include ./deps/eng/tools/mk/Makefile.smf.defs
 all: $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts
 
 node_modules: package.json | $(NPM_EXEC) $(PACK)
-	$(NPM) install
+	$(NPM) install --no-save
 
 $(TAPE): node_modules
 
