@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -35,7 +35,6 @@ var IPXE_START = ['#!ipxe'];
 var IPXE_INITRD =
     'module tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive '
     + 'type=rootfs name=ramdisk';
-var IPXE_HASH = IPXE_INITRD + '.hash';
 var IPXE_KERNEL =
     'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix' +
     ' %s-B %s';
@@ -58,14 +57,11 @@ function keyValArgs(params) {
 
 
 function merge(/* ... */) {
-    var res = {};
     var args = Array.prototype.slice.call(arguments);
-    args.forEach(function (obj) {
-        for (var k in obj) {
-            res[k] = obj[k];
-        }
+    var res = {};
+    args.forEach(function (arg) {
+        Object.assign(res, arg);
     });
-
     return res;
 }
 
@@ -79,7 +75,7 @@ function setUpMocks() {
     mod_mock.register();
 
     menuLst = require('../lib/menulst');
-    return  mod_mock.create();
+    return mod_mock.create();
 }
 
 
@@ -319,6 +315,52 @@ test('VGA console', function (t) {
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
+            t.end();
+        });
+    });
+});
+
+
+test('Linux CN', function linuxCN(t) {
+    setUpMocks();
+    const fnParams = {
+        os: 'linux',
+        platforms: {
+            '20200203T051553Z': {
+                os: 'linux'
+            }
+        },
+        bootParams: {
+            platform: '20200203T051553Z'
+        },
+        tftpRoot: '/tmp',
+        useHash: true
+    };
+    menuLst.buildMenuLst(fnParams, function (menu) {
+        t.deepEqual(menu.split('\n'), MENU_START.concat([
+            'variable os_console console=ttyS0',
+            '',
+            'title Live 64-bit',
+            '   kernel$ /os/20200203T051553Z/platform/x86_64/vmlinuz',
+            '   initrd$ /os/20200203T051553Z/platform/x86_64/initrd',
+            '   module$ /zfs/20200203T051553Z/packages.tar type=file ' +
+            'name=/packages.tar',
+            ''
+        ]), 'menu.lst');
+        menuLst.buildIpxeCfg(fnParams, function (cfg) {
+            /* BEGIN JSSTYLED */
+            /* eslint-disable max-len */
+            t.deepEqual(cfg.split('\n'), IPXE_START.concat([
+                'kernel /os/20200203T051553Z/platform/x86_64/vmlinuz ' +
+                'boot=live console=ttyS0 fetch=tftp://{next-server}/os/20200203T051553Z/platform/x86_64/filesystem.squashfs',
+                'initrd /os/20200203T051553Z/platform/x86_64/initrd name=ramdisk',
+                'module --name /packages.tar /zfs/20200203T051553Z/packages.tar',
+                'module --name /os/20200203T051553Z/platform/x86_64/filesystem.squashfs.hash fetch=tftp://{next-server}/os/20200203T051553Z/platform/x86_64/filesystem.squashfs.hash type=hash',
+                'module --name /os/20200203T051553Z/platform/x86_64/initrd.hash type=hash name=ramdisk',
+                'boot'
+            ]), 'boot.ipxe');
+            /* eslint-enable max-len */
+            /* END JSSTYLED */
             t.end();
         });
     });

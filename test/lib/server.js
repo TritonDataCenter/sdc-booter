@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -13,7 +13,6 @@
  */
 
 var assert = require('assert-plus');
-var vasync = require('vasync');
 var mod_log = require('./log');
 var mod_boot_files;
 var mod_dhcpd;
@@ -87,9 +86,7 @@ function bootData(opts, callback) {
             napi: opts.napi,
             adminPoolCache: SERVER.cache,
             nic_tag: opts.nic_tag
-        }, function (err, res) {
-            callback(err, res);
-        });
+        }, callback);
     });
 }
 
