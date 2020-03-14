@@ -45,7 +45,6 @@ tape.test('DHCP Server test', function (suite) {
             })
         });
         SERVER.start();
-        // body...
         t.end();
     });
 
@@ -78,7 +77,6 @@ tape.test('DHCP Server test', function (suite) {
         CLIENT.close();
         SERVER.sock.close();
         SERVER = null;
-        // body...
         t.end();
     });
 
