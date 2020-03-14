@@ -85,7 +85,11 @@ $(TAP): | $(NPM_EXEC)
 
 .PHONY: test
 test: $(TAP) node_modules
-	$(TAP) test/**/*.test.js
+	$(TAP) test/unit/*.test.js
+
+.PHONY: coverage
+coverage: $(TAP) node_modules
+	$(TAP) test/**/*.test.js --coverage-report=html --no-browser
 
 $(PACK):
 	$(NPM) pack file:$(TOP)/src/node-pack
