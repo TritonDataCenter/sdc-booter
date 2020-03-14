@@ -22,7 +22,7 @@ const util = require('util');
 const format = util.format;
 const mockery = require('mockery');
 const mod_mock = require('../lib/mocks');
-const test = require('tape');
+const tap = require('tap');
 
 // --- Globals
 var menuLst;
@@ -90,7 +90,7 @@ function tearDownMocks() {
 // --- Tests
 
 
-test('defaults', function (t) {
+tap.test('defaults', function (t) {
     setUpMocks();
     var params = {
         platform: 'latest',
@@ -154,7 +154,7 @@ test('defaults', function (t) {
 });
 
 
-test('defaults with kernel flags', function (t) {
+tap.test('defaults with kernel flags', function (t) {
     setUpMocks();
     var params = {
         platform: 'latest',
@@ -227,7 +227,7 @@ test('defaults with kernel flags', function (t) {
 });
 
 
-test('serial console', function (t) {
+tap.test('serial console', function (t) {
     setUpMocks();
     var params = {
         platform: 'some',
@@ -294,7 +294,7 @@ test('serial console', function (t) {
 });
 
 
-test('VGA console', function (t) {
+tap.test('VGA console', function (t) {
     setUpMocks();
     var params = {
         platform: '20121213T212651Z',
@@ -359,7 +359,7 @@ test('VGA console', function (t) {
 });
 
 
-test('Linux CN', function linuxCN(t) {
+tap.test('Linux CN', function linuxCN(t) {
     setUpMocks();
     const fnParams = {
         os: 'linux',

@@ -23,7 +23,7 @@ const mod_file = require('../lib/file');
 const mod_mock = require('../lib/mocks');
 const mod_server = require('../lib/server');
 const restify = require('restify');
-const test = require('tape');
+const tap = require('tap');
 const util = require('util');
 const vasync = require('vasync');
 
@@ -151,11 +151,11 @@ function tearDownMocks() {
 }
 
 
-// --- Tests
+// --- tests
 
 
 
-test('new CN boots', function (t) {
+tap.test('new CN boots', function (t) {
     setUpMocks();
     var newNic = {
         belongs_to_type: 'other',
@@ -237,7 +237,7 @@ test('new CN boots', function (t) {
 });
 
 
-test('new CN boots with admin pool', function (t) {
+tap.test('new CN boots with admin pool', function (t) {
     setUpMocks();
 
     var admin_network = {
@@ -362,7 +362,7 @@ test('new CN boots with admin pool', function (t) {
 });
 
 
-test('existing CN boots', function (t) {
+tap.test('existing CN boots', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -425,7 +425,7 @@ test('existing CN boots', function (t) {
     });
 });
 
-test('existing CN boots: no bootparams', function (t) {
+tap.test('existing CN boots: no bootparams', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
 
@@ -493,7 +493,7 @@ test('existing CN boots: no bootparams', function (t) {
  * nic configured.  For example, you might want to boot from a 1g nic but
  * have admin be a 10g.
  */
-test('admin nic different than booting nic', function (t) {
+tap.test('admin nic different than booting nic', function (t) {
     setUpMocks();
     var desc = ': admin nic != booting nic';
     var serverNics = clone(CN1_NICS);
@@ -560,7 +560,7 @@ test('admin nic different than booting nic', function (t) {
 });
 
 
-test('existing CN boots: NAPI connection error', function (t) {
+tap.test('existing CN boots: NAPI connection error', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -747,7 +747,7 @@ test('existing CN boots: NAPI connection error', function (t) {
 });
 
 
-test('existing CN boots: CNAPI connection error', function (t) {
+tap.test('existing CN boots: CNAPI connection error', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -835,7 +835,7 @@ test('existing CN boots: CNAPI connection error', function (t) {
 });
 
 
-test('error while provisioning nic', function (t) {
+tap.test('error while provisioning nic', function (t) {
     setUpMocks();
     mocks.napi.VALUES = {
         getNic: [ { err: error404() } ],
@@ -863,7 +863,7 @@ test('error while provisioning nic', function (t) {
 });
 
 
-test('invalid JSON in cache file', function (t) {
+tap.test('invalid JSON in cache file', function (t) {
     setUpMocks();
     var bootParams = clone(CN1_BOOT_PARAMS);
     var serverNics = clone(CN1_NICS);
@@ -918,7 +918,7 @@ test('invalid JSON in cache file', function (t) {
 });
 
 
-test('aggregation', function (t) {
+tap.test('aggregation', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);

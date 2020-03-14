@@ -14,7 +14,7 @@
 
 const bunyan = require('bunyan');
 const client = require('dhcp').createClient;
-const tape = require('tape');
+const tap = require('tap');
 
 const AdminPoolCache = require('../../lib/admin-pool-cache');
 const server = require('../../lib/dhcpd').createServer;
@@ -28,7 +28,7 @@ const log = bunyan.createLogger({
     stream: process.stderr
 });
 
-tape.test('DHCP Server test', function (suite) {
+tap.test('DHCP Server test', function (suite) {
     suite.test('setup', function (t) {
         CLIENT = client({mac: '10:dd:b1:a2:57:bf'});
         const napi = require('../../lib/clients').createNAPIclient(config);
