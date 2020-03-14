@@ -344,6 +344,7 @@ function registerMocks() {
         '../lib/cache',
         '../lib/dhcpd',
         '../lib/menulst',
+        '../../lib/menulst',
         './bootparams',
         './boot-files',
         './boot-module-files',

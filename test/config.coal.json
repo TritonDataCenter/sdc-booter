@@ -1,0 +1,35 @@
+{
+  "napi": {
+    "url": "http://napi.coal.joyent.us"
+  },
+  "cnapi": {
+    "url": "http://cnapi.coal.joyent.us"
+  },
+  "overlay": {
+      "enabled": false
+  },
+  "datacenterName": "coal",
+  "dnsDomain": "joyent.us",
+  "ipxeHTTP": true,
+  "adminUuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+  "listenIp": "0.0.0.0",
+  "port": 67,
+  "tftpRoot": "/tmp/tftpboot",
+  "defaultGateway": "",
+  "serverIp": "10.99.99.254",
+  "leaseTime": 2592000,
+  "resolvers": [],
+  "netmask": "255.255.255.0",
+  "cache": {
+    "dir": "/tmp/tftpboot/cache",
+    "refreshIntervalSeconds": 30,
+    "purgeIntervalSeconds": 360,
+    "maxCacheFileAgeSeconds": 604800,
+    "refreshConcurrency": 16
+  },
+  "poolCache": {
+    "updateIntervalSeconds": 60,
+    "dir": "/tmp/tftpboot/poolcache"
+  },
+  "allowMissingClassID": true
+}

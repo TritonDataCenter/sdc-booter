@@ -12,21 +12,26 @@
  * bootparams tests
  */
 
-var clone = require('clone');
-var mockery = require('mockery');
-var mod_file = require('./lib/file');
-var mod_mock = require('./lib/mocks');
-var mod_server = require('./lib/server');
-var restify = require('restify');
-var test = require('tape');
-var util = require('util');
-var vasync = require('vasync');
+// Ensure we are loading everything from scratch:
+Object.keys(require.cache).forEach(function (key) {
+    delete require.cache[key];
+});
+
+const clone = require('clone');
+const mockery = require('mockery');
+const mod_file = require('../lib/file');
+const mod_mock = require('../lib/mocks');
+const mod_server = require('../lib/server');
+const restify = require('restify');
+const test = require('tape');
+const util = require('util');
+const vasync = require('vasync');
 
 
 // --- Globals
 
 
-var CN1_NICS = [
+const CN1_NICS = [
     {
         belongs_to_type: 'server',
         belongs_to_uuid: '564d5535-52f0-f2ac-72e5-bca4d1d45bfa',
@@ -67,7 +72,7 @@ var CN1_NICS = [
     }
 ];
 
-var CN1_BOOT_PARAMS = {
+const CN1_BOOT_PARAMS = {
     platform: '20121203T051553Z',
     kernel_args: {
         rabbitmq: 'guest:guest:10.99.99.16:5672',
@@ -77,7 +82,7 @@ var CN1_BOOT_PARAMS = {
     os: 'smartos'
 };
 
-var DEFAULT_BOOT_PARAMS = {
+const DEFAULT_BOOT_PARAMS = {
     platform: 'latest',
     kernel_args: {
         rabbitmq: 'guest:guest:10.99.99.16:5672'
@@ -97,8 +102,6 @@ const PLATFORMS = {
 };
 
 var mocks;
-// var bp;
-// var mod_dhcpd;
 
 // --- Internal helpers
 
@@ -825,6 +828,7 @@ test('existing CN boots: CNAPI connection error', function (t) {
             t.deepEqual(mod_file.netConfig(serverNics[1].mac), expNetConfig,
                 'network boot-time still correct');
 
+            tearDownMocks();
             t.end();
         });
     });

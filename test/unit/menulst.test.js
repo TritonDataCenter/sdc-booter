@@ -12,30 +12,36 @@
  * menu.lst generation tests
  */
 
-var format = require('util').format;
-var menuLst;
-var mod_mock = require('./lib/mocks');
-var test = require('tape');
 
+// Ensure we are loading everything from scratch:
+Object.keys(require.cache).forEach(function (key) {
+    delete require.cache[key];
+});
+
+const util = require('util');
+const format = util.format;
+const mockery = require('mockery');
+const mod_mock = require('../lib/mocks');
+const test = require('tape');
 
 // --- Globals
+var menuLst;
 
 
-
-var MENU_START = ['default 0', 'timeout 5', 'min_mem64 1024'];
-var KERNEL =
+const MENU_START = ['default 0', 'timeout 5', 'min_mem64 1024'];
+const KERNEL =
     '  kernel$ /os/%s/platform/i86pc/kernel/amd64/unix %s-B %s';
-var MODULE = '  module$ /os/%s/platform/i86pc/amd64/boot_archive '
+const MODULE = '  module$ /os/%s/platform/i86pc/amd64/boot_archive '
     + 'type=rootfs name=ramdisk';
-var TITLE_LIVE = 'title Live 64-bit';
-var TITLE_KMDB = 'title Live 64-bit +kmdb';
-var TITLE_RESCUE = 'title Live 64-bit Rescue (no importing zpool)';
+const TITLE_LIVE = 'title Live 64-bit';
+const TITLE_KMDB = 'title Live 64-bit +kmdb';
+const TITLE_RESCUE = 'title Live 64-bit Rescue (no importing zpool)';
 
-var IPXE_START = ['#!ipxe'];
-var IPXE_INITRD =
+const IPXE_START = ['#!ipxe'];
+const IPXE_INITRD =
     'module tftp://${next-server}/os/%s/platform/i86pc/amd64/boot_archive '
     + 'type=rootfs name=ramdisk';
-var IPXE_KERNEL =
+const IPXE_KERNEL =
     'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix' +
     ' %s-B %s';
 
@@ -73,11 +79,13 @@ function merge(/* ... */) {
 
 function setUpMocks() {
     mod_mock.register();
-
-    menuLst = require('../lib/menulst');
+    menuLst = require('../../lib/menulst');
     return mod_mock.create();
 }
 
+function tearDownMocks() {
+    mockery.disable();
+}
 
 // --- Tests
 
@@ -88,7 +96,9 @@ test('defaults', function (t) {
         platform: 'latest',
         kernel_args: {
             rabbitmq: 'guest:guest:10.99.99.16:5672'
-        }
+        },
+        ip: '10.99.99.123',
+        netmask: '255.255.255.0'
     };
     var conparams = {
         console: '${os_console}',
@@ -106,7 +116,8 @@ test('defaults', function (t) {
 
     var fnParams = {
         bootParams: params,
-        tftpRoot: '/tmp'
+        tftpRoot: '/tmp',
+        mac: '00:0c:29:d4:5b:04'
     };
 
     menuLst.buildMenuLst(fnParams, function (menu) {
@@ -136,6 +147,7 @@ test('defaults', function (t) {
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
+            tearDownMocks();
             t.end();
         });
     });
@@ -153,7 +165,9 @@ test('defaults with kernel flags', function (t) {
             '-k': true,
             '-x': true,
             '-m': 'milestone=none'
-        }
+        },
+        ip: '10.99.99.123',
+        netmask: '255.255.255.0'
     };
     var conparams = {
         console: '${os_console}',
@@ -171,7 +185,8 @@ test('defaults with kernel flags', function (t) {
 
     var fnParams = {
         bootParams: params,
-        tftpRoot: '/tmp'
+        tftpRoot: '/tmp',
+        mac: '00:0c:29:d4:5b:04'
     };
 
     menuLst.buildMenuLst(fnParams, function (menu) {
@@ -205,6 +220,7 @@ test('defaults with kernel flags', function (t) {
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
+            tearDownMocks();
             t.end();
         });
     });
@@ -216,7 +232,12 @@ test('serial console', function (t) {
     var params = {
         platform: 'some',
         default_console: 'serial',
-        serial: 'ttya'
+        serial: 'ttya',
+        kernel_args: {
+            rabbitmq: 'guest:guest:10.99.99.16:5672'
+        },
+        ip: '10.99.99.123',
+        netmask: '255.255.255.0'
     };
     var conparams = {
         console: '${os_console}',
@@ -230,7 +251,8 @@ test('serial console', function (t) {
 
     var fnParams = {
         bootParams: params,
-        tftpRoot: '/tmp'
+        tftpRoot: '/tmp',
+        mac: '00:0c:29:d4:5b:04'
     };
 
     menuLst.buildMenuLst(fnParams, function (menu) {
@@ -241,27 +263,32 @@ test('serial console', function (t) {
             'color cyan/blue white/blue',
             '',
             TITLE_LIVE,
-            format(KERNEL, params.platform, '', keyValArgs(conparams)),
+            format(KERNEL, params.platform, '',
+                keyValArgs(params.kernel_args) + ',' + keyValArgs(conparams)),
             format(MODULE, params.platform),
             '',
             TITLE_KMDB,
-            format(KERNEL, params.platform, '-d -k ', keyValArgs(conparams)),
+            format(KERNEL, params.platform, '-d -k ',
+                keyValArgs(params.kernel_args) + ',' + keyValArgs(conparams)),
             format(MODULE, params.platform),
             '',
             TITLE_RESCUE,
-            format(KERNEL, params.platform, '', keyValArgs(noImportArgs)),
+            format(KERNEL, params.platform, '',
+                keyValArgs(params.kernel_args) + ',' +
+                keyValArgs(noImportArgs)),
             format(MODULE, params.platform),
             ''
         ]), 'menu.lst');
 
         menuLst.buildIpxeCfg(fnParams, function (cfg) {
-              t.deepEqual(cfg.split('\n'), IPXE_START.concat([
-                  format(IPXE_KERNEL, params.platform, '',
-                      keyValArgs(ipxe_conparams)),
-                  format(IPXE_INITRD, params.platform),
-                  'boot'
-              ]), 'boot.ipxe');
-              t.end();
+            t.deepEqual(cfg.split('\n'), IPXE_START.concat([
+                format(IPXE_KERNEL, params.platform, '',
+                    keyValArgs(merge(params.kernel_args, ipxe_conparams))),
+                format(IPXE_INITRD, params.platform),
+                'boot'
+            ]), 'boot.ipxe');
+            tearDownMocks();
+            t.end();
         });
     });
 });
@@ -271,7 +298,12 @@ test('VGA console', function (t) {
     setUpMocks();
     var params = {
         platform: '20121213T212651Z',
-        serial: 'none'
+        kernel_args: {
+            rabbitmq: 'guest:guest:10.99.99.16:5672'
+        },
+        serial: 'none',
+        ip: '10.99.99.123',
+        netmask: '255.255.255.0'
     };
     var conparams = {
         console: '${os_console}',
@@ -285,7 +317,8 @@ test('VGA console', function (t) {
 
     var fnParams = {
         bootParams: params,
-        tftpRoot: '/tmp'
+        tftpRoot: '/tmp',
+        mac: '00:0c:29:d4:5b:04'
     };
 
     menuLst.buildMenuLst(fnParams, function (menu) {
@@ -295,15 +328,19 @@ test('VGA console', function (t) {
             'splashimage=/joybadger.xpm.gz',
             '',
             TITLE_LIVE,
-            format(KERNEL, params.platform, '', keyValArgs(conparams)),
+            format(KERNEL, params.platform, '',
+                keyValArgs(params.kernel_args) + ',' + keyValArgs(conparams)),
             format(MODULE, params.platform),
             '',
             TITLE_KMDB,
-            format(KERNEL, params.platform, '-d -k ', keyValArgs(conparams)),
+            format(KERNEL, params.platform, '-d -k ',
+                keyValArgs(params.kernel_args) + ',' + keyValArgs(conparams)),
             format(MODULE, params.platform),
             '',
             TITLE_RESCUE,
-            format(KERNEL, params.platform, '', keyValArgs(noImportArgs)),
+            format(KERNEL, params.platform, '',
+                keyValArgs(params.kernel_args) + ',' +
+                keyValArgs(noImportArgs)),
             format(MODULE, params.platform),
             ''
         ]), 'menu.lst');
@@ -311,10 +348,11 @@ test('VGA console', function (t) {
         menuLst.buildIpxeCfg(fnParams, function (cfg) {
             t.deepEqual(cfg.split('\n'), IPXE_START.concat([
                 format(IPXE_KERNEL, params.platform, '',
-                    keyValArgs(ipxe_conparams)),
+                      keyValArgs(merge(params.kernel_args, ipxe_conparams))),
                 format(IPXE_INITRD, params.platform),
                 'boot'
             ]), 'boot.ipxe');
+            tearDownMocks();
             t.end();
         });
     });
@@ -331,36 +369,46 @@ test('Linux CN', function linuxCN(t) {
             }
         },
         bootParams: {
-            platform: '20200203T051553Z'
+            platform: '20200203T051553Z',
+            kernel_args: {
+                rabbitmq: 'guest:guest:10.99.99.16:5672'
+            },
+            ip: '10.99.99.124',
+            netmask: '255.255.255.0'
         },
         tftpRoot: '/tmp',
-        useHash: true
+        useHash: true,
+        mac: '10:dd:b1:a2:57:bf',
+        serverIp: '10.99.99.9'
     };
+    const plat = fnParams.bootParams.platform;
     menuLst.buildMenuLst(fnParams, function (menu) {
         t.deepEqual(menu.split('\n'), MENU_START.concat([
             'variable os_console console=ttyS0',
             '',
             'title Live 64-bit',
-            '   kernel$ /os/20200203T051553Z/platform/x86_64/vmlinuz',
-            '   initrd$ /os/20200203T051553Z/platform/x86_64/initrd',
-            '   module$ /zfs/20200203T051553Z/packages.tar type=file ' +
-            'name=/packages.tar',
+            format('   kernel$ /os/%s/platform/x86_64/vmlinuz', plat),
+            format('   initrd$ /os/%s/platform/x86_64/initrd', plat),
+            // format('   module$ /zfs/%s/packages.tar type=file ', plat) +
+            // 'name=/packages.tar',
             ''
         ]), 'menu.lst');
         menuLst.buildIpxeCfg(fnParams, function (cfg) {
             /* BEGIN JSSTYLED */
             /* eslint-disable max-len */
             t.deepEqual(cfg.split('\n'), IPXE_START.concat([
-                'kernel /os/20200203T051553Z/platform/x86_64/vmlinuz ' +
-                'boot=live console=ttyS0 fetch=tftp://{next-server}/os/20200203T051553Z/platform/x86_64/filesystem.squashfs',
-                'initrd /os/20200203T051553Z/platform/x86_64/initrd name=ramdisk',
-                'module --name /packages.tar /zfs/20200203T051553Z/packages.tar',
-                'module --name /os/20200203T051553Z/platform/x86_64/filesystem.squashfs.hash fetch=tftp://{next-server}/os/20200203T051553Z/platform/x86_64/filesystem.squashfs.hash type=hash',
-                'module --name /os/20200203T051553Z/platform/x86_64/initrd.hash type=hash name=ramdisk',
+                format('kernel /os/%s/platform/x86_64/vmlinuz ', plat) +
+                format('boot=live console=ttyS0 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
+                format(' fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs', plat),
+                format('initrd /os/%s/platform/x86_64/initrd name=ramdisk', plat),
+                // 'module --name /packages.tar /zfs/%s/packages.tar',
+                format('module --name /os/%s/platform/x86_64/filesystem.squashfs.hash fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash type=hash', plat, plat),
+                format('module --name /os/%s/platform/x86_64/initrd.hash type=hash name=ramdisk', plat),
                 'boot'
             ]), 'boot.ipxe');
             /* eslint-enable max-len */
             /* END JSSTYLED */
+            tearDownMocks();
             t.end();
         });
     });
