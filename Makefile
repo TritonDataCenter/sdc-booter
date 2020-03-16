@@ -81,7 +81,7 @@ node_modules: package.json | $(NPM_EXEC) $(PACK)
 	$(NPM) install --no-save
 
 $(TAP): | $(NPM_EXEC)
-	$(NPM) install tap
+	$(NPM) install tap --no-save
 
 .PHONY: test
 test: $(TAP) node_modules
