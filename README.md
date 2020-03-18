@@ -71,7 +71,7 @@ To run a single test:
 Booter supports a few SAPI configuration values:
 
 - `http_pxe_boot`: if set to `true`, allow iPXE clients to pull down their
-  files via HTTP rather than TFTP
+  files via HTTP rather than TFTP. This is the default.
 - `compute_node_default_gateway`: set this to give Compute Nodes a
   default gateway
 - `dhcp_lease_time`: DHCP lease time for Compute Nodes
@@ -88,5 +88,5 @@ To update any of the above values, use the SAPI tools.  For example, in the
 Global Zone:
 
     dhcpd_svc=$(sdc-sapi /services?name=dhcpd | json -Ha uuid)
-    sapiadm update $dhcpd_svc metadata.http_pxe_boot=true
+    sapiadm update $dhcpd_svc metadata.http_pxe_boot=false
 
