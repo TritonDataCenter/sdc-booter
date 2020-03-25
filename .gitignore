@@ -7,3 +7,5 @@
 /smf/manifests/*.xml
 /bits
 /build
+config.json
+.nyc_output

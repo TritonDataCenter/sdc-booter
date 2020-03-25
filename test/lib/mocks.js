@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -21,7 +21,6 @@ var mod_path = require('path');
 
 
 
-var LOG = false;
 var MOCKS;
 var REGISTERED = false;
 var ROOT = {};
@@ -173,6 +172,12 @@ function createMocks() {
             { uuid: uuid }, cb);
     };
 
+    mocks.cnapi.listPlatforms = function (opts, cb) {
+        return this._handle('listPlatforms', {
+            opts: opts
+        }, cb);
+    };
+
     // sdc-clients
 
     mocks.sdcClients = {
@@ -231,7 +236,7 @@ function createMocks() {
             return setImmediate(cb);
         },
 
-        mkdirSync: function (dir, mode) {
+        mkdirSync: function (dir, _mode) {
             if (ROOT.hasOwnProperty(dir)) {
                 var err = new Error('EEXIST: ' + dir);
                 err.code = 'EEXIST';
@@ -265,17 +270,17 @@ function createMocks() {
             return setImmediate(cb, null, ROOT[p.dir][p.file]);
         },
 
-        stat: function (file, cb) {
+        stat: function (_file, cb) {
             // This is really just to reassure mkdirp that it has created
             // a directory:
             return setImmediate(cb, null, {
-                isDirectory: function () { return true; }
+                isDirectory: function () { return true; },
+                isFile: function () { return true; }
             });
         },
 
         writeFile: function (file, data, cb) {
             var p = _splitFile(file);
-
             if (!ROOT.hasOwnProperty(p.dir)) {
                 return setImmediate(cb, _ENOENT(file));
             }
@@ -298,7 +303,7 @@ function createMocks() {
 
 function registerMocks() {
     if (REGISTERED) {
-        return;
+        return null;
     }
 
     var mocks = createMocks();
@@ -320,6 +325,8 @@ function registerMocks() {
         'events',
         'findit',
         'ip6addr',
+        'jsprim',
+        'json-schema',
         'node-uuid',
         'pack',
         'path',
@@ -330,14 +337,17 @@ function registerMocks() {
         'verror',
         '../../lib/admin-pool-cache',
         '../../lib/boot-files',
+        '../../lib/boot-module-files',
         '../../lib/cache',
         '../../lib/dhcpd',
         '../lib/bootparams',
         '../lib/cache',
         '../lib/dhcpd',
         '../lib/menulst',
+        '../../lib/menulst',
         './bootparams',
         './boot-files',
+        './boot-module-files',
         './clients',
         './cache',
         './dhcp',

@@ -20,8 +20,7 @@ TOP := $(shell pwd)
 #
 # Tools
 #
-TAPE := ./node_modules/.bin/tape
-ISTANBUL := ./node_modules/.bin/istanbul
+TAP := ./node_modules/.bin/tap
 PACK := ./$(BUILD)/pack-0.0.1.tgz
 
 #
@@ -81,17 +80,16 @@ all: $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts
 node_modules: package.json | $(NPM_EXEC) $(PACK)
 	$(NPM) install --no-save
 
-$(TAPE): node_modules
-
-$(ISTANBUL): node_modules
+$(TAP): | $(NPM_EXEC)
+	$(NPM) install tap --no-save
 
 .PHONY: test
-test: | $(NODE_EXEC) $(TAPE) node_modules
-	$(NODE) $(TAPE) test/*.test.js
+test: $(TAP) node_modules
+	$(TAP) test/unit/*.test.js
 
 .PHONY: coverage
-coverage: | $(ISTANBUL) $(TAPE) node_modules
-	$(ISTANBUL) cover $(TAPE) test/*.test.js
+coverage: $(TAP) node_modules
+	$(TAP) test/**/*.test.js --coverage-report=html --no-browser
 
 $(PACK):
 	$(NPM) pack file:$(TOP)/src/node-pack
