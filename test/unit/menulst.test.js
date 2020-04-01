@@ -51,14 +51,16 @@ const IPXE_KERNEL =
 
 
 
-function keyValArgs(params) {
+function keyValArgs(params, sep) {
     if (!params) {
         return '';
     }
-
+    if (!sep) {
+        sep = ',';
+    }
     return Object.keys(params).map(function (k) {
         return format('%s=%s', k, params[k]);
-    }).join(',');
+    }).join(sep);
 }
 
 
@@ -371,7 +373,8 @@ tap.test('Linux CN', function linuxCN(t) {
         bootParams: {
             platform: '20200203T051553Z',
             kernel_args: {
-                rabbitmq: 'guest:guest:10.99.99.16:5672'
+                rabbitmq: 'guest:guest:10.99.99.16:5672',
+                debug: 'y'
             },
             ip: '10.99.99.124',
             netmask: '255.255.255.0'
@@ -398,12 +401,12 @@ tap.test('Linux CN', function linuxCN(t) {
             /* eslint-disable max-len */
             t.deepEqual(cfg.split('\n'), IPXE_START.concat([
                 format('kernel /os/%s/platform/x86_64/vmlinuz ', plat) +
-                format('boot=live console=ttyS0 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
-                format(' fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs', plat),
-                format('initrd /os/%s/platform/x86_64/initrd name=ramdisk', plat),
+                format('boot=live console=ttyS0 console=tty0 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
+                format(' %s fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs', keyValArgs(fnParams.bootParams.kernel_args, ' '), plat),
+                format('initrd tftp://10.99.99.9/os/%s/platform/x86_64/initrd', plat),
                 // 'module --name /packages.tar /zfs/%s/packages.tar',
-                format('module --name /os/%s/platform/x86_64/filesystem.squashfs.hash fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash type=hash', plat, plat),
-                format('module --name /os/%s/platform/x86_64/initrd.hash type=hash name=ramdisk', plat),
+                format('module tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash filesystem.squashfs.hash', plat),
+                format('module tftp://10.99.99.9/os/%s/platform/x86_64/initrd.hash initrd.hash', plat),
                 'boot'
             ]), 'boot.ipxe');
             /* eslint-enable max-len */

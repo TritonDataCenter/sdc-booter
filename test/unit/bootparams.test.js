@@ -181,7 +181,8 @@ tap.test('new CN boots', function (t) {
 
     mocks.cnapi.VALUES = {
         getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({ mac: newNic.mac }, function (err, res) {
@@ -295,7 +296,8 @@ tap.test('new CN boots with admin pool', function (t) {
 
     mocks.cnapi.VALUES = {
         getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({
@@ -377,7 +379,8 @@ tap.test('existing CN boots', function (t) {
 
     mocks.cnapi.VALUES = {
         getBootParams: [ { res: bootParams } ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(bootParams);
@@ -442,7 +445,8 @@ tap.test('existing CN boots: no bootparams', function (t) {
             { err: error404() },
             { res: clone(DEFAULT_BOOT_PARAMS) }
         ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(DEFAULT_BOOT_PARAMS);
@@ -515,7 +519,8 @@ tap.test('admin nic different than booting nic', function (t) {
 
     mocks.cnapi.VALUES = {
         getBootParams: [ { res: clone(CN1_BOOT_PARAMS) } ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(CN1_BOOT_PARAMS);
@@ -609,7 +614,8 @@ tap.test('existing CN boots: NAPI connection error', function (t) {
             { res: clone(PLATFORMS)},
             { res: clone(PLATFORMS)},
             { res: clone(PLATFORMS)}
-        ]
+        ],
+        listServers: [ { res: []}]
     };
 
     var expParams;
@@ -778,7 +784,8 @@ tap.test('existing CN boots: CNAPI connection error', function (t) {
         listPlatforms: [
             { res: clone(PLATFORMS)},
             { res: clone(PLATFORMS)}
-        ]
+        ],
+        listServers: [ { res: []}]
     };
 
     var expNetConfig = {
@@ -846,7 +853,8 @@ tap.test('error while provisioning nic', function (t) {
 
     mocks.cnapi.VALUES = {
         getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({ mac: '06:b7:ad:86:be:05' }, function (err, res) {
@@ -890,7 +898,8 @@ tap.test('invalid JSON in cache file', function (t) {
         getBootParams: [
             { res: bootParams }
         ],
-        listPlatforms: [ { res: clone(PLATFORMS)}]
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
@@ -963,7 +972,8 @@ tap.test('aggregation', function (t) {
         listPlatforms: [
             { res: clone(PLATFORMS)},
             { res: clone(PLATFORMS)}
-        ]
+        ],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(bootParams);

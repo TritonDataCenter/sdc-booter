@@ -1,7 +1,7 @@
 {
   "name": "booter",
   "description": "DHCP server for booting SDC compute nodes",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {

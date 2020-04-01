@@ -178,6 +178,12 @@ function createMocks() {
         }, cb);
     };
 
+    mocks.cnapi.listServers = function (opts, cb) {
+        return this._handle('listServers', {
+            opts: opts
+        }, cb);
+    };
+
     // sdc-clients
 
     mocks.sdcClients = {

@@ -75,7 +75,7 @@ include ./deps/eng/tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts
+all: $(SMF_MANIFESTS) node_modules | $(TAP) sdc-scripts
 
 node_modules: package.json | $(NPM_EXEC) $(PACK)
 	$(NPM) install --no-save
@@ -84,12 +84,12 @@ $(TAP): | $(NPM_EXEC)
 	$(NPM) install tap --no-save
 
 .PHONY: test
-test: $(TAP) node_modules
-	$(TAP) test/unit/*.test.js
+test: $(NODE_EXEC) $(TAP) node_modules
+	$(NODE) $(TAP) test/unit/*.test.js
 
 .PHONY: coverage
-coverage: $(TAP) node_modules
-	$(TAP) test/**/*.test.js --coverage-report=html --no-browser
+coverage: $(NODE_EXEC) $(TAP) node_modules
+	 $(NODE) $(TAP) test/**/*.test.js --coverage-report=html --no-browser
 
 $(PACK):
 	$(NPM) pack file:$(TOP)/src/node-pack
