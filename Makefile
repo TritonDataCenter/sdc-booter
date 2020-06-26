@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 NAME=dhcpd
@@ -86,8 +86,8 @@ $(TAPE): node_modules
 $(ISTANBUL): node_modules
 
 .PHONY: test
-test: | $(TAPE) node_modules
-	$(TAPE) test/*.test.js
+test: | $(NODE_EXEC) $(TAPE) node_modules
+	$(NODE) $(TAPE) test/*.test.js
 
 .PHONY: coverage
 coverage: | $(ISTANBUL) $(TAPE) node_modules
