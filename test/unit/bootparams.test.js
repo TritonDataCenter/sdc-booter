@@ -5,31 +5,33 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
  * bootparams tests
  */
 
-var bp;
-var clone = require('clone');
-var mockery = require('mockery');
-var mod_dhcpd;
-var mod_file = require('./lib/file');
-var mod_log = require('./lib/log');
-var mod_mock = require('./lib/mocks');
-var mod_server = require('./lib/server');
-var restify = require('restify');
-var test = require('tape');
-var util = require('util');
-var vasync = require('vasync');
+// Ensure we are loading everything from scratch:
+Object.keys(require.cache).forEach(function (key) {
+    delete require.cache[key];
+});
+
+const clone = require('clone');
+const mockery = require('mockery');
+const mod_file = require('../lib/file');
+const mod_mock = require('../lib/mocks');
+const mod_server = require('../lib/server');
+const restify = require('restify');
+const tap = require('tap');
+const util = require('util');
+const vasync = require('vasync');
 
 
 // --- Globals
 
 
-var CN1_NICS = [
+const CN1_NICS = [
     {
         belongs_to_type: 'server',
         belongs_to_uuid: '564d5535-52f0-f2ac-72e5-bca4d1d45bfa',
@@ -70,24 +72,36 @@ var CN1_NICS = [
     }
 ];
 
-var CN1_BOOT_PARAMS = {
+const CN1_BOOT_PARAMS = {
     platform: '20121203T051553Z',
     kernel_args: {
         rabbitmq: 'guest:guest:10.99.99.16:5672',
         hostname: '00-0c-29-d4-5b-fa',
         other_param: 'buzz'
-    }
+    },
+    os: 'smartos'
 };
 
-var DEFAULT_BOOT_PARAMS = {
+const DEFAULT_BOOT_PARAMS = {
     platform: 'latest',
     kernel_args: {
         rabbitmq: 'guest:guest:10.99.99.16:5672'
+    },
+    os: 'smartos'
+};
+
+const PLATFORMS = {
+    '20121203T051553Z': {
+        'os': 'smartos',
+        'latest': true
+    },
+    '20200203T051553Z': {
+        'os': 'linux',
+        'latest': true
     }
 };
 
 var mocks;
-
 
 // --- Internal helpers
 
@@ -116,7 +130,9 @@ function getBootParams(opts, callback) {
         bootParams[p] = opts[p];
     }
 
-    mod_server.bootData(bootParams, callback);
+    mocks.mkdirp(mod_server.config().tftpRoot, function () {
+        mod_server.bootData(bootParams, callback);
+    });
 }
 
 
@@ -126,10 +142,6 @@ function getBootParams(opts, callback) {
 
 function setUpMocks() {
     mod_mock.register();
-
-    bp = require('../lib/bootparams');
-    mod_dhcpd = require('../lib/dhcpd');
-
     mocks = mod_mock.create();
 }
 
@@ -139,11 +151,11 @@ function tearDownMocks() {
 }
 
 
-// --- Tests
+// --- tests
 
 
 
-test('new CN boots', function (t) {
+tap.test('new CN boots', function (t) {
     setUpMocks();
     var newNic = {
         belongs_to_type: 'other',
@@ -168,13 +180,16 @@ test('new CN boots', function (t) {
     };
 
     mocks.cnapi.VALUES = {
-        getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
+        getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({ mac: newNic.mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         var params = clone(DEFAULT_BOOT_PARAMS);
@@ -223,7 +238,7 @@ test('new CN boots', function (t) {
 });
 
 
-test('new CN boots with admin pool', function (t) {
+tap.test('new CN boots with admin pool', function (t) {
     setUpMocks();
 
     var admin_network = {
@@ -280,14 +295,19 @@ test('new CN boots with admin pool', function (t) {
     };
 
     mocks.cnapi.VALUES = {
-        getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
+        getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
-    getBootParams({ mac: newNic.mac, nic_tag: newNic.nic_tag },
-            function (err, res) {
+    getBootParams({
+        mac: newNic.mac,
+        nic_tag: newNic.nic_tag
+    }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         var params = clone(DEFAULT_BOOT_PARAMS);
@@ -344,7 +364,7 @@ test('new CN boots with admin pool', function (t) {
 });
 
 
-test('existing CN boots', function (t) {
+tap.test('existing CN boots', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -358,7 +378,9 @@ test('existing CN boots', function (t) {
     };
 
     mocks.cnapi.VALUES = {
-        getBootParams: [ { res: bootParams } ]
+        getBootParams: [ { res: bootParams } ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(bootParams);
@@ -366,7 +388,8 @@ test('existing CN boots', function (t) {
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -401,11 +424,11 @@ test('existing CN boots', function (t) {
         }, 'network boot-time file written correctly');
 
         tearDownMocks();
-        return t.end();
+        t.end();
     });
 });
 
-test('existing CN boots: no bootparams', function (t) {
+tap.test('existing CN boots: no bootparams', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
 
@@ -419,9 +442,11 @@ test('existing CN boots: no bootparams', function (t) {
 
     mocks.cnapi.VALUES = {
         getBootParams: [
-        { err: error404() },
-        { res: clone(DEFAULT_BOOT_PARAMS) }
-        ]
+            { err: error404() },
+            { res: clone(DEFAULT_BOOT_PARAMS) }
+        ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(DEFAULT_BOOT_PARAMS);
@@ -429,7 +454,8 @@ test('existing CN boots: no bootparams', function (t) {
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         expParams.kernel_args.admin_nic = serverNics[1].mac;
@@ -471,7 +497,7 @@ test('existing CN boots: no bootparams', function (t) {
  * nic configured.  For example, you might want to boot from a 1g nic but
  * have admin be a 10g.
  */
-test('admin nic different than booting nic', function (t) {
+tap.test('admin nic different than booting nic', function (t) {
     setUpMocks();
     var desc = ': admin nic != booting nic';
     var serverNics = clone(CN1_NICS);
@@ -492,7 +518,9 @@ test('admin nic different than booting nic', function (t) {
     };
 
     mocks.cnapi.VALUES = {
-        getBootParams: [ { res: clone(CN1_BOOT_PARAMS) } ]
+        getBootParams: [ { res: clone(CN1_BOOT_PARAMS) } ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(CN1_BOOT_PARAMS);
@@ -500,7 +528,8 @@ test('admin nic different than booting nic', function (t) {
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         // admin_nic will be set to the nic in NAPI with nic_tags_provided of
@@ -531,12 +560,12 @@ test('admin nic different than booting nic', function (t) {
         }, 'network boot-time file' + desc);
 
         tearDownMocks();
-        return t.end();
+        t.end();
     });
 });
 
 
-test('existing CN boots: NAPI connection error', function (t) {
+tap.test('existing CN boots: NAPI connection error', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -580,7 +609,13 @@ test('existing CN boots: NAPI connection error', function (t) {
             // not called 2nd time: error from napi.getNic() prevents this
             { res: bootParams2 },
             { res: bootParams2 }
-        ]
+        ],
+        listPlatforms: [
+            { res: clone(PLATFORMS)},
+            { res: clone(PLATFORMS)},
+            { res: clone(PLATFORMS)}
+        ],
+        listServers: [ { res: []}]
     };
 
     var expParams;
@@ -607,7 +642,8 @@ test('existing CN boots: NAPI connection error', function (t) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err, 'expect truthy value');
                 if (err) {
-                    return cb();
+                    cb();
+                    return;
                 }
 
                 expParams = res.bootParams;
@@ -617,7 +653,7 @@ test('existing CN boots: NAPI connection error', function (t) {
                 t.deepEqual(mod_file.netConfig(serverNics[1].mac),
                     expNetConfig, 'network boot-time file written correctly');
 
-                return cb();
+                cb();
             });
         },
 
@@ -626,7 +662,8 @@ test('existing CN boots: NAPI connection error', function (t) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err, 'expect truthy value');
                 if (err) {
-                    return cb();
+                    cb();
+                    return;
                 }
 
                 t.deepEqual(res.bootParams, expParams,
@@ -646,7 +683,7 @@ test('existing CN boots: NAPI connection error', function (t) {
                 t.deepEqual(mod_file.netConfig(serverNics[1].mac), expNetConfig,
                     '2: network boot-time file still written correctly');
 
-                return cb();
+                cb();
             });
         },
 
@@ -655,7 +692,8 @@ test('existing CN boots: NAPI connection error', function (t) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err, 'expect truthy value');
                 if (err) {
-                    return cb();
+                    cb();
+                    return;
                 }
 
                 expParams.kernel_args.other_param =
@@ -677,7 +715,7 @@ test('existing CN boots: NAPI connection error', function (t) {
                 t.deepEqual(mod_file.netConfig(serverNics[1].mac), expNetConfig,
                     '3: network boot-time file still written correctly');
 
-                return cb();
+                cb();
             });
         },
 
@@ -686,7 +724,8 @@ test('existing CN boots: NAPI connection error', function (t) {
             getBootParams({ mac: serverNics[1].mac }, function (err, res) {
                 t.ifError(err, 'expect truthy value');
                 if (err) {
-                    return cb();
+                    cb();
+                    return;
                 }
 
                 t.deepEqual(res.bootParams, expParams,
@@ -704,17 +743,17 @@ test('existing CN boots: NAPI connection error', function (t) {
                 t.deepEqual(mod_file.netConfig(serverNics[1].mac), expNetConfig,
                     '4: network boot-time file still written correctly');
 
-                return cb();
+                cb();
             });
         }
     ] }, function () {
         tearDownMocks();
-        return t.end();
+        t.end();
     });
 });
 
 
-test('existing CN boots: CNAPI connection error', function (t) {
+tap.test('existing CN boots: CNAPI connection error', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -741,7 +780,12 @@ test('existing CN boots: CNAPI connection error', function (t) {
         getBootParams: [
             { res: bootParams },
             { err: new restify.RestError({ message: 'connect ECONNREFUSED' }) }
-        ]
+        ],
+        listPlatforms: [
+            { res: clone(PLATFORMS)},
+            { res: clone(PLATFORMS)}
+        ],
+        listServers: [ { res: []}]
     };
 
     var expNetConfig = {
@@ -764,7 +808,8 @@ test('existing CN boots: CNAPI connection error', function (t) {
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         expParams = res.bootParams;
@@ -790,13 +835,14 @@ test('existing CN boots: CNAPI connection error', function (t) {
             t.deepEqual(mod_file.netConfig(serverNics[1].mac), expNetConfig,
                 'network boot-time still correct');
 
-            return t.end();
+            tearDownMocks();
+            t.end();
         });
     });
 });
 
 
-test('error while provisioning nic', function (t) {
+tap.test('error while provisioning nic', function (t) {
     setUpMocks();
     mocks.napi.VALUES = {
         getNic: [ { err: error404() } ],
@@ -806,13 +852,16 @@ test('error while provisioning nic', function (t) {
     };
 
     mocks.cnapi.VALUES = {
-        getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ]
+        getBootParams: [ { res: clone(DEFAULT_BOOT_PARAMS) } ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({ mac: '06:b7:ad:86:be:05' }, function (err, res) {
         t.ok(err, 'Error returned');
         if (!err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         t.equal(err.message, 'XXX bad error', 'correct error returned');
@@ -822,7 +871,7 @@ test('error while provisioning nic', function (t) {
 });
 
 
-test('invalid JSON in cache file',  function (t) {
+tap.test('invalid JSON in cache file', function (t) {
     setUpMocks();
     var bootParams = clone(CN1_BOOT_PARAMS);
     var serverNics = clone(CN1_NICS);
@@ -848,13 +897,16 @@ test('invalid JSON in cache file',  function (t) {
     mocks.cnapi.VALUES = {
         getBootParams: [
             { res: bootParams }
-        ]
+        ],
+        listPlatforms: [ { res: clone(PLATFORMS)}],
+        listServers: [ { res: []}]
     };
 
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         mod_file.cache(serverNics[1].mac, 'asdf');
@@ -862,7 +914,8 @@ test('invalid JSON in cache file',  function (t) {
         getBootParams({ mac: serverNics[1].mac }, function (err2) {
             t.ok(err2, 'Error returned');
             if (!err2) {
-                return t.end();
+                t.end();
+                return;
             }
 
             t.equal(err2.message, 'connect ECONNREFUSED',
@@ -874,7 +927,7 @@ test('invalid JSON in cache file',  function (t) {
 });
 
 
-test('aggregation', function (t) {
+tap.test('aggregation', function (t) {
     setUpMocks();
     var serverNics = clone(CN1_NICS);
     var bootParams = clone(CN1_BOOT_PARAMS);
@@ -915,7 +968,12 @@ test('aggregation', function (t) {
         getBootParams: [
             { res: bootParams },
             { res: bootParams2 }
-        ]
+        ],
+        listPlatforms: [
+            { res: clone(PLATFORMS)},
+            { res: clone(PLATFORMS)}
+        ],
+        listServers: [ { res: []}]
     };
 
     var expParams = clone(bootParams);
@@ -923,7 +981,8 @@ test('aggregation', function (t) {
     getBootParams({ mac: serverNics[1].mac }, function (err, res) {
         t.ifError(err, 'expect truthy value');
         if (err) {
-            return t.end();
+            t.end();
+            return;
         }
 
         expParams.kernel_args.admin_nic = 'aggr0';
@@ -931,7 +990,7 @@ test('aggregation', function (t) {
         expParams.kernel_args.foo_nic = 'aggr0';
         expParams.kernel_args.aggr0_lacp_mode = 'passive';
         expParams.kernel_args.aggr0_aggr = util.format(
-            '\"%s\"', aggr.macs.join(','));
+            '"%s"', aggr.macs.join(','));
 
         expParams.ip = serverNics[1].ip;
         expParams.netmask = serverNics[1].netmask;
@@ -998,7 +1057,7 @@ test('aggregation', function (t) {
             }, 'network boot-time file written correctly');
 
             tearDownMocks();
-            return t.end();
+            t.end();
         });
     });
 });

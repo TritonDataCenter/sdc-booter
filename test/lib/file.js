@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -57,7 +57,8 @@ function cacheFile(mac, val) {
     var name = fmt('%s.json', mac);
     var path = fmt('%s/cache', mod_server.config().tftpRoot);
     if (val) {
-        return mod_mocks.getCreated().fs.getRoot()[path][name] = val;
+        mod_mocks.getCreated().fs.getRoot()[path][name] = val;
+        return val;
     }
 
     return JSON.parse(mod_mocks.getCreated().fs.getRoot()[path][name]);

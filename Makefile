@@ -20,8 +20,7 @@ TOP := $(shell pwd)
 #
 # Tools
 #
-TAPE := ./node_modules/.bin/tape
-ISTANBUL := ./node_modules/.bin/istanbul
+TAP := ./node_modules/.bin/tap
 PACK := ./$(BUILD)/pack-0.0.1.tgz
 
 #
@@ -76,22 +75,21 @@ include ./deps/eng/tools/mk/Makefile.smf.defs
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) node_modules | $(TAPE) sdc-scripts
+all: $(SMF_MANIFESTS) node_modules | $(TAP) sdc-scripts
 
 node_modules: package.json | $(NPM_EXEC) $(PACK)
 	$(NPM) install --no-save
 
-$(TAPE): node_modules
-
-$(ISTANBUL): node_modules
+$(TAP): | $(NPM_EXEC)
+	$(NPM) install tap --no-save
 
 .PHONY: test
-test: | $(NODE_EXEC) $(TAPE) node_modules
-	$(NODE) $(TAPE) test/*.test.js
+test: $(NODE_EXEC) $(TAP) node_modules
+	$(NODE) $(TAP) test/unit/*.test.js
 
 .PHONY: coverage
-coverage: | $(ISTANBUL) $(TAPE) node_modules
-	$(ISTANBUL) cover $(TAPE) test/*.test.js
+coverage: $(NODE_EXEC) $(TAP) node_modules
+	 $(NODE) $(TAP) test/**/*.test.js --coverage-report=html --no-browser
 
 $(PACK):
 	$(NPM) pack file:$(TOP)/src/node-pack
