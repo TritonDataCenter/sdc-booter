@@ -5,6 +5,9 @@
   "cnapi": {
     "url": "http://{{{CNAPI_SERVICE}}}"
   },
+  "assets": {
+    "url": "http://{{{assets-ip}}}"
+  },
 {{#fabric_cfg}}
   "overlay": {
       "enabled": true,

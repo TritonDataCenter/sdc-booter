@@ -22,6 +22,7 @@ const util = require('util');
 const format = util.format;
 const mockery = require('mockery');
 const mod_mock = require('../lib/mocks');
+const mod_node_config = require('../../lib/node-config-file');
 const tap = require('tap');
 
 // --- Globals
@@ -394,6 +395,8 @@ tap.test('Linux CN', function linuxCN(t) {
             format('   initrd$ /os/%s/platform/x86_64/initrd', plat),
             // format('   module$ /zfs/%s/packages.tar type=file ', plat) +
             // 'name=/packages.tar',
+            format('  module$ %s type=file name=etc/%s',
+                mod_node_config.bootPath, mod_node_config.fileName),
             ''
         ]), 'menu.lst');
         menuLst.buildIpxeCfg(fnParams, function (cfg) {
@@ -407,6 +410,7 @@ tap.test('Linux CN', function linuxCN(t) {
                 // 'module --name /packages.tar /zfs/%s/packages.tar',
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash filesystem.squashfs.hash', plat),
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/initrd.hash initrd.hash', plat),
+                format('module %s://%s%s type=file name=etc/%s', 'tftp', '10.99.99.9', mod_node_config.bootPath, mod_node_config.fileName),
                 'boot'
             ]), 'boot.ipxe');
             /* eslint-enable max-len */

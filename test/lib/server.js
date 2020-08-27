@@ -56,7 +56,8 @@ function createServer(config) {
         log: log,
         adminPoolCache: cache,
         napi: config.opts.napi,
-        cnapi: config.opts.cnapi
+        cnapi: config.opts.cnapi,
+        assets: config.opts.assets
     });
 
     SERVER.dhcp = dhcp;
@@ -84,6 +85,7 @@ function bootData(opts, callback) {
             log: mod_log.child({ mac: opts.mac }),
             mac: opts.mac,
             napi: opts.napi,
+            assets: opts.assets,
             adminPoolCache: SERVER.cache,
             nic_tag: opts.nic_tag
         }, callback);

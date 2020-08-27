@@ -123,6 +123,7 @@ function getBootParams(opts, callback) {
     var bootParams = {
         napi: mocks.napi,
         cnapi: mocks.cnapi,
+        assets: mocks.assets,
         mac: opts.mac
     };
 
