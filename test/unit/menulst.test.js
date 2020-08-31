@@ -410,7 +410,7 @@ tap.test('Linux CN', function linuxCN(t) {
                 // 'module --name /packages.tar /zfs/%s/packages.tar',
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash filesystem.squashfs.hash', plat),
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/initrd.hash initrd.hash', plat),
-                format('module %s://%s%s type=file name=etc/%s', 'tftp', '10.99.99.9', mod_node_config.bootPath, mod_node_config.fileName),
+                format('module %s://%s%s /etc/%s', 'tftp', '10.99.99.9', mod_node_config.bootPath, mod_node_config.fileName),
                 'boot'
             ]), 'boot.ipxe');
             /* eslint-enable max-len */
