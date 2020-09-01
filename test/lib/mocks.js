@@ -184,14 +184,6 @@ function createMocks() {
         }, cb);
     };
 
-    mocks.assets = new Mock();
-
-    mocks.assets.get = function (path, cb) {
-        return this._handle('getNodeConfigFile', {
-            path: path
-        }, cb);
-    };
-
     // sdc-clients
 
     mocks.sdcClients = {
@@ -344,7 +336,6 @@ function registerMocks() {
         'node-uuid',
         'pack',
         'path',
-        'restify',
         'sprintf',
         'stream',
         'util',
@@ -353,7 +344,6 @@ function registerMocks() {
         '../../lib/admin-pool-cache',
         '../../lib/boot-files',
         '../../lib/boot-module-files',
-        '../../lib/node-config-file',
         '../../lib/cache',
         '../../lib/dhcpd',
         '../lib/bootparams',
@@ -364,7 +354,6 @@ function registerMocks() {
         './bootparams',
         './boot-files',
         './boot-module-files',
-        './node-config-file',
         './clients',
         './cache',
         './dhcp',

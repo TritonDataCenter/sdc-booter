@@ -22,7 +22,6 @@ const util = require('util');
 const format = util.format;
 const mockery = require('mockery');
 const mod_mock = require('../lib/mocks');
-const mod_node_config = require('../../lib/node-config-file');
 const tap = require('tap');
 
 // --- Globals
@@ -46,7 +45,8 @@ const IPXE_KERNEL =
     'kernel tftp://${next-server}/os/%s/platform/i86pc/kernel/amd64/unix' +
     ' %s-B %s';
 
-
+const NODE_CONFIG_FNAME = 'node.config';
+const NODE_CONFIG_BOOT_PATH = format('/extra/joysetup/%s', NODE_CONFIG_FNAME);
 
 // --- Internal helpers
 
@@ -396,7 +396,7 @@ tap.test('Linux CN', function linuxCN(t) {
             // format('   module$ /zfs/%s/packages.tar type=file ', plat) +
             // 'name=/packages.tar',
             format('  module$ %s type=file name=etc/%s',
-                mod_node_config.bootPath, mod_node_config.fileName),
+                NODE_CONFIG_BOOT_PATH, NODE_CONFIG_FNAME),
             ''
         ]), 'menu.lst');
         menuLst.buildIpxeCfg(fnParams, function (cfg) {
@@ -410,7 +410,7 @@ tap.test('Linux CN', function linuxCN(t) {
                 // 'module --name /packages.tar /zfs/%s/packages.tar',
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash filesystem.squashfs.hash', plat),
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/initrd.hash initrd.hash', plat),
-                format('module %s://%s%s /etc/%s', 'tftp', '10.99.99.9', mod_node_config.bootPath, mod_node_config.fileName),
+                format('module %s://%s%s /etc/%s', 'tftp', '10.99.99.9', NODE_CONFIG_BOOT_PATH, NODE_CONFIG_FNAME),
                 'boot'
             ]), 'boot.ipxe');
             /* eslint-enable max-len */
