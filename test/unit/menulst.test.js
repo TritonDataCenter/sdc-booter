@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2020 Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 /*
@@ -387,27 +387,24 @@ tap.test('Linux CN', function linuxCN(t) {
     };
     const plat = fnParams.bootParams.platform;
     menuLst.buildMenuLst(fnParams, function (menu) {
-        t.deepEqual(menu.split('\n'), MENU_START.concat([
-            'variable os_console console=ttyS0',
+            /* BEGIN JSSTYLED */
+            /* eslint-disable max-len */
+            t.deepEqual(menu.split('\n'), MENU_START.concat([
+            'variable os_console console=ttyS1,115200n8',
             '',
             'title Live 64-bit',
-            format('   kernel$ /os/%s/platform/x86_64/vmlinuz', plat),
+            format('   kernel$ /os/%s/platform/x86_64/vmlinuz console=tty0 console=ttyS1,115200n8', plat),
             format('   initrd$ /os/%s/platform/x86_64/initrd', plat),
-            // format('   module$ /zfs/%s/packages.tar type=file ', plat) +
-            // 'name=/packages.tar',
             format('  module$ %s type=file name=etc/%s',
                 NODE_CONFIG_BOOT_PATH, NODE_CONFIG_FNAME),
             ''
         ]), 'menu.lst');
-        menuLst.buildIpxeCfg(fnParams, function (cfg) {
-            /* BEGIN JSSTYLED */
-            /* eslint-disable max-len */
+            menuLst.buildIpxeCfg(fnParams, function (cfg) {
             t.deepEqual(cfg.split('\n'), IPXE_START.concat([
                 format('kernel /os/%s/platform/x86_64/vmlinuz ', plat) +
-                format('boot=live console=ttyS0 console=tty0 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
+                format('boot=live console=ttyS1,115200n8 console=tty0 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
                 format(' %s fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs', keyValArgs(fnParams.bootParams.kernel_args, ' '), plat),
                 format('initrd tftp://10.99.99.9/os/%s/platform/x86_64/initrd', plat),
-                // 'module --name /packages.tar /zfs/%s/packages.tar',
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash filesystem.squashfs.hash', plat),
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/initrd.hash initrd.hash', plat),
                 format('module %s://%s%s /etc/%s', 'tftp', '10.99.99.9', NODE_CONFIG_BOOT_PATH, NODE_CONFIG_FNAME),
