@@ -402,7 +402,7 @@ tap.test('Linux CN', function linuxCN(t) {
             menuLst.buildIpxeCfg(fnParams, function (cfg) {
             t.deepEqual(cfg.split('\n'), IPXE_START.concat([
                 format('kernel /os/%s/platform/x86_64/vmlinuz ', plat) +
-                format('boot=live console=ttyS1,115200n8 console=tty0 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
+                format('boot=live console=tty0 console=ttyS1,115200n8 BOOTIF=%s ip=%s:::%s::', '01-10-dd-b1-a2-57-bf', fnParams.bootParams.ip, fnParams.bootParams.netmask) +
                 format(' %s fetch=tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs', keyValArgs(fnParams.bootParams.kernel_args, ' '), plat),
                 format('initrd tftp://10.99.99.9/os/%s/platform/x86_64/initrd', plat),
                 format('module tftp://10.99.99.9/os/%s/platform/x86_64/filesystem.squashfs.hash filesystem.squashfs.hash', plat),
