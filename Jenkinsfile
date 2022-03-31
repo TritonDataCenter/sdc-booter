@@ -39,6 +39,11 @@ pipeline {
                 sh('make check')
             }
         }
+        stage('pre-test-clean') {
+            steps {
+                sh('git clean -fdx')
+            }
+        }
         stage('test') {
             steps{
                 sh('make test')
