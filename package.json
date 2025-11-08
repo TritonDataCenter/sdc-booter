@@ -2,7 +2,7 @@
   "name": "booter",
   "description": "DHCP server for booting SDC compute nodes",
   "version": "1.7.5",
-  "author": "MNX Cloud (mnx.io)",
+  "author": "Edgecast Cloud (edgecast.io)",
   "private": true,
   "dependencies": {
     "assert-plus": "1.0.0",
